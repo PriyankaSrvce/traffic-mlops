@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+*.pyc
+mlruns/
+data/raw/*.csv
+data/processed/*.csv
+.env
