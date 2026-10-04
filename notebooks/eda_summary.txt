@@ -1,0 +1,179 @@
+
+======================================================================
+1. BASIC INFO
+======================================================================
+Rows: 8936   Columns: 19
+Date range: 2022-01-01 to 2024-08-09
+Distinct dates: 952
+Distinct areas: 8
+Distinct roads/intersections: 16
+
+======================================================================
+2. DATA QUALITY
+======================================================================
+Missing values per column:
+Date                                  0
+Area Name                             0
+Road/Intersection Name                0
+Traffic Volume                        0
+Average Speed                         0
+Travel Time Index                     0
+Congestion Level                      0
+Road Capacity Utilization             0
+Incident Reports                      0
+Environmental Impact                  0
+Public Transport Usage                0
+Traffic Signal Compliance             0
+Parking Usage                         0
+Pedestrian and Cyclist Count          0
+Weather Conditions                    0
+Roadwork and Construction Activity    0
+day_of_week                           0
+month                                 0
+is_weekend                            0
+
+Duplicate rows: 0
+Duplicate (Date, Road) pairs: 0
+
+======================================================================
+3. TRAFFIC VOLUME SUMMARY
+======================================================================
+count     8936.0
+mean     29236.0
+std      13001.8
+min       4233.0
+25%      19413.0
+50%      27600.0
+75%      38058.5
+max      72039.0
+
+IQR outlier bounds: -8555 to 66027
+Rows outside bounds: 24 (0.27%)
+
+======================================================================
+4. ALL NUMERIC COLUMNS (describe)
+======================================================================
+                               count      mean       std      min       25%       50%       75%       max
+Traffic Volume                8936.0  29236.05  13001.81  4233.00  19413.00  27600.00  38058.50  72039.00
+Average Speed                 8936.0     39.45     10.71    20.00     31.78     39.20     46.64     89.79
+Travel Time Index             8936.0      1.38      0.17     1.00      1.24      1.50      1.50      1.50
+Congestion Level              8936.0     80.82     23.53     5.16     64.29     92.39    100.00    100.00
+Road Capacity Utilization     8936.0     92.03     16.58    18.74     97.35    100.00    100.00    100.00
+Incident Reports              8936.0      1.57      1.42     0.00      0.00      1.00      2.00     10.00
+Environmental Impact          8936.0    108.47     26.00    58.47     88.83    105.20    126.12    194.08
+Public Transport Usage        8936.0     45.09     20.21    10.01     27.34     45.17     62.43     79.98
+Traffic Signal Compliance     8936.0     79.95     11.59    60.00     69.83     79.99     89.96     99.99
+Parking Usage                 8936.0     75.16     14.41    50.02     62.55     75.32     87.52    100.00
+Pedestrian and Cyclist Count  8936.0    114.53     36.81    66.00     94.00    102.00    111.00    243.00
+month                         8936.0      5.98      3.34     1.00      3.00      6.00      9.00     12.00
+
+======================================================================
+5. ROWS PER AREA
+======================================================================
+                 rows  percent
+Area Name                     
+Indiranagar      1720     19.2
+M.G. Road        1501     16.8
+Koramangala      1364     15.3
+Jayanagar        1173     13.1
+Hebbal            950     10.6
+Whitefield        942     10.5
+Yeshwanthpur      734      8.2
+Electronic City   552      6.2
+
+======================================================================
+6. WEATHER
+======================================================================
+                    rows  percent
+Weather Conditions               
+Clear               5426     60.7
+Overcast            1296     14.5
+Fog                  959     10.7
+Rain                 827      9.3
+Windy                428      4.8
+
+Average Traffic Volume by weather:
+Weather Conditions
+Windy       30163.0
+Rain        29559.0
+Fog         29183.0
+Clear       29167.0
+Overcast    29053.0
+
+======================================================================
+7. ROADWORK
+======================================================================
+                                    rows  percent
+Roadwork and Construction Activity               
+No                                  8054     90.1
+Yes                                  882      9.9
+
+Average Traffic Volume by roadwork:
+Roadwork and Construction Activity
+No     29195.0
+Yes    29614.0
+
+======================================================================
+8. DAY OF WEEK AND WEEKEND vs WEEKDAY
+======================================================================
+day_of_week
+Monday       29510.0
+Tuesday      28911.0
+Wednesday    29698.0
+Thursday     29530.0
+Friday       28843.0
+Saturday     29063.0
+Sunday       29105.0
+
+Weekday average: 29297
+Weekend average: 29084
+Weekend vs weekday: -0.7%
+
+======================================================================
+9. AVERAGE VOLUME BY AREA
+======================================================================
+Area Name
+Koramangala        40832.0
+M.G. Road          35300.0
+Indiranagar        32284.0
+Hebbal             26533.0
+Jayanagar          24601.0
+Whitefield         21295.0
+Yeshwanthpur       18932.0
+Electronic City    16347.0
+
+======================================================================
+10. AVERAGE VOLUME BY MONTH
+======================================================================
+month
+1     28830.0
+2     29148.0
+3     29516.0
+4     29574.0
+5     28927.0
+6     29742.0
+7     28875.0
+8     29504.0
+9     29083.0
+10    29381.0
+11    29303.0
+12    28952.0
+
+======================================================================
+11. CORRELATION WITH TRAFFIC VOLUME
+======================================================================
+Environmental Impact            1.000
+Congestion Level                0.837
+Travel Time Index               0.698
+Road Capacity Utilization       0.653
+Incident Reports                0.339
+Traffic Signal Compliance       0.005
+month                           0.001
+Public Transport Usage         -0.001
+Parking Usage                  -0.026
+Average Speed                  -0.341
+Pedestrian and Cyclist Count   -0.555
+
+Note: columns measured at the same time as volume (speed, congestion, capacity use, etc.) must NOT be model inputs.
+
+Saved plots: plot_day_of_week.png, plot_area.png, plot_weather.png, plot_correlation.png, plot_month.png
