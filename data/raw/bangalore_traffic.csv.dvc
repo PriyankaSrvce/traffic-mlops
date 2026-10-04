@@ -1,0 +1,5 @@
+outs:
+- md5: e4eba120722bf681e43f973b35a37e6d
+  size: 1535462
+  hash: md5
+  path: bangalore_traffic.csv
