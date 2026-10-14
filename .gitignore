@@ -6,3 +6,4 @@ data/raw/*.csv
 data/processed/*.csv
 .env
 mlflow.db
+/model.pkl

@@ -1,0 +1,38 @@
+schema: '2.0'
+stages:
+  featurize:
+    cmd: python -m src.features.build_features
+    deps:
+    - path: data/raw/bangalore_traffic.csv
+      hash: md5
+      md5: e4eba120722bf681e43f973b35a37e6d
+      size: 1535462
+    - path: src/features/bangalore_events.csv
+      hash: md5
+      md5: 5009a60286d1d2f1cbaf812cef418378
+      size: 251
+    - path: src/features/build_features.py
+      hash: md5
+      md5: 2c003d37ab043536c1d7d0795af526a3
+      size: 7776
+    outs:
+    - path: data/processed/traffic_features.csv
+      hash: md5
+      md5: b74fe741c5602073054a1df28793b9e6
+      size: 343105
+  train:
+    cmd: python -m src.models.train
+    deps:
+    - path: data/processed/traffic_features.csv
+      hash: md5
+      md5: b74fe741c5602073054a1df28793b9e6
+      size: 343105
+    - path: src/models/train.py
+      hash: md5
+      md5: 52f3bdee50a4f288d97e630816564e65
+      size: 5726
+    outs:
+    - path: model.pkl
+      hash: md5
+      md5: 8e8bf1bd81afd74fc04cf82299625ac1
+      size: 1408199

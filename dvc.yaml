@@ -1,0 +1,17 @@
+stages:
+  featurize:
+    cmd: python -m src.features.build_features
+    deps:
+      - src/features/build_features.py
+      - src/features/bangalore_events.csv
+      - data/raw/bangalore_traffic.csv
+    outs:
+      - data/processed/traffic_features.csv
+
+  train:
+    cmd: python -m src.models.train
+    deps:
+      - src/models/train.py
+      - data/processed/traffic_features.csv
+    outs:
+      - model.pkl
