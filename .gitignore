@@ -5,3 +5,4 @@ mlruns/
 data/raw/*.csv
 data/processed/*.csv
 .env
+mlflow.db
