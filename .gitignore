@@ -7,3 +7,16 @@ data/processed/*.csv
 .env
 mlflow.db
 /model.pkl
+
+# SUMO generated simulation outputs
+sumo/summary.xml
+sumo/tripinfo.xml
+trips.trips.xml
+
+# Trained model binaries (recreate using training scripts)
+models/*.joblib
+
+# Generated simulation result files
+reports/*.xml
+reports/*decisions.csv
+reports/*predictions.csv

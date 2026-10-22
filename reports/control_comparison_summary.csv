@@ -1,0 +1,5 @@
+metric,fixed_time_mean,adaptive_mean,reduction_pct
+Average trip duration (s),89.6833,82.9933,7.4596
+Average waiting time (s),15.3606,8.9156,41.9581
+Average time loss (s),27.9581,21.3171,23.7532
+Average route length (m),821.9921,821.9548,0.0045
