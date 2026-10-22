@@ -1,55 +1,32 @@
 # Data Dictionary - Bangalore Traffic Dataset
 
-Source: Bangalore's Traffic Pulse (Preetham Gouda, Kaggle),
-`data/raw/bangalore_traffic.csv`.
-Size: 8,936 rows x 16 columns. Dates: 2022-01-01 to 2024-08-09.
-No missing values, no duplicate rows (checked in `notebooks/eda.py`).
+The supplied local file is named `Banglore_traffic_Dataset.csv`; project notes attribute it to Bangalore's Traffic Pulse (Preetham Gouda, Kaggle). This audit verified the local file contents and that its MD5 matches the project's DVC pointer, but did not independently verify the original source or Kaggle listing. Dataset license status: **unverified**.
 
-Descriptions below are based on the column names and the values we observed.
-Units are not stated in the file, so we do not assume any. Check the Kaggle
-page before quoting a unit in the report.
+The raw CSV contains 8,936 rows and 16 columns. Dates range from 2022-01-01 to 2024-08-09; all 952 calendar dates are present. There are no blank cells, exact duplicate rows, or duplicate `(Date, Road/Intersection Name)` pairs. Source units are not stated, so none are assumed.
 
-"Model input?" means: could this column be known IN ADVANCE when we want to
-predict traffic volume? Columns measured at the same time as volume would not
-be available at prediction time, so using them would be data leakage.
+| Column | CSV type | Description and verified observations | Prediction use |
+|---|---|---|---|
+| Date | date text | Daily observation date; 952 distinct dates. | Calendar features and time-aware evaluation. Not a model input in the current trainer. |
+| Area Name | text | Area label; 8 areas. | Candidate categorical input; stored as a text label in the prepared output and encoded within the training pipeline. |
+| Road/Intersection Name | text | Road or junction label; 16 roads. | Candidate categorical input; stored as a text label in the prepared output and encoded within the training pipeline. |
+| Traffic Volume | integer | Target field; 4,233 to 72,039; mean 29,236. | Current continuous regression target. |
+| Average Speed | decimal | Same-observation speed. | Excluded from model inputs. |
+| Travel Time Index | decimal | Same-observation travel-time measure. | Excluded; correlated 0.698 with volume. |
+| Congestion Level | decimal | Same-observation congestion measure, capped at 100. | Excluded; correlated 0.837 with volume. |
+| Road Capacity Utilization | decimal | Same-observation capacity-use measure, capped at 100. | Excluded; correlated 0.653 with volume. |
+| Incident Reports | integer | Same-observation incident count. | Excluded from current feature set. |
+| Environmental Impact | decimal | Environmental measure; Pearson correlation 1.000 with volume in this file. | Excluded; strong leakage concern. |
+| Public Transport Usage | decimal | Public-transport measure. | Excluded from current feature set; availability at prediction time is unclear. |
+| Traffic Signal Compliance | decimal | Same-observation signal-compliance measure. | Excluded from current feature set. |
+| Parking Usage | decimal | Parking-use measure. | Excluded from current feature set. |
+| Pedestrian and Cyclist Count | integer | Same-observation count. | Excluded from current feature set. |
+| Weather Conditions | text | Clear 5,426 (60.7%), Overcast 1,296 (14.5%), Fog 959 (10.7%), Rain 827 (9.3%), Windy 428 (4.8%). | Candidate only when a forecast is available before prediction. |
+| Roadwork and Construction Activity | text | Yes 882 (9.9%), No 8,054 (90.1%). | Candidate only when known before prediction. |
 
-| # | Column | Type | What it is | Observed values | Model input? |
-|---|---|---|---|---|---|
-| 1 | Date | date (text in CSV) | Day of the observation. There is no time-of-day column, so the data is daily. | 2022-01-01 to 2024-08-09, 952 distinct dates | Yes - used to build day of week, month, weekend, holiday |
-| 2 | Area Name | text | Neighbourhood where the road is | 8 areas; most rows Indiranagar (1,720), fewest Electronic City (552) | Yes |
-| 3 | Road/Intersection Name | text | Specific road or junction | 16 roads, e.g. Sony World Junction, Silk Board Junction | Yes |
-| 4 | Traffic Volume | integer | Number of vehicles counted. **This is our target.** | 4,233 to 72,039; mean 29,236 | Target (not an input) |
-| 5 | Average Speed | decimal | Average vehicle speed | 20.0 to 89.8; mean 39.5 | No - measured with volume |
-| 6 | Travel Time Index | decimal | Ratio showing how much longer trips take than free flow | 1.00 to 1.50; mean 1.38 | No - measured with volume |
-| 7 | Congestion Level | decimal | Congestion score. Capped at 100; median 92 and the top quartile is exactly 100 | 5.2 to 100; mean 80.8 | No - measured with volume, and saturated |
-| 8 | Road Capacity Utilization | decimal | How much of the road's capacity is used. Capped at 100 | 18.7 to 100; mean 92.0 | No - measured with volume |
-| 9 | Incident Reports | integer | Number of incidents reported | 0 to 10; mean 1.6 | No - not known in advance |
-| 10 | Environmental Impact | decimal | Environmental impact measure. Correlation with volume is about 1.0, so it looks derived from volume | 58.5 to 194.1; mean 108.5 | **No - leakage** |
-| 11 | Public Transport Usage | decimal | Share/level of public transport use | 10.0 to 80.0; mean 45.1 | Not used (no correlation with volume, about 0.0, and not known in advance) |
-| 12 | Traffic Signal Compliance | decimal | How well drivers obey signals | 60.0 to 100.0; mean 80.0 | Not used (no correlation with volume, not known in advance) |
-| 13 | Parking Usage | decimal | Parking occupancy level | 50.0 to 100.0; mean 75.2 | Not used (no correlation with volume, not known in advance) |
-| 14 | Pedestrian and Cyclist Count | integer | Number of pedestrians and cyclists | 66 to 243; mean 114.5 | No - measured with volume |
-| 15 | Weather Conditions | text | Weather on that day | Clear 60.7%, Overcast 14.5%, Fog 10.7%, Rain 9.3%, Windy 4.8% | Yes (would come from a forecast in real use) |
-| 16 | Roadwork and Construction Activity | text (Yes/No) | Whether roadwork is happening | No 90.1%, Yes 9.9% | Yes (roadwork is usually scheduled in advance) |
+## Prepared feature interface
 
-## Summary of what we use
+`data/processed/traffic_features.csv` contains `Date`, `day_of_week`, `month`, `is_weekend`, `is_holiday`, `is_event_day`, `Area Name`, `Road/Intersection Name`, `Weather Conditions`, `roadwork_flag`, `weekday_flag`, and `Traffic Volume` (12 columns). The trainer uses `Traffic Volume` as the regression target, drops `Date` for model fitting, and excludes `weekday_flag` because it duplicates `is_weekend`. The model pipeline fits one-hot category encoding on training data and ignores unseen categories.
 
-**Inputs (candidate features):** Date (turned into day of week, month,
-weekend, holiday), Area Name, Road/Intersection Name, Weather Conditions,
-Roadwork and Construction Activity.
+The IQR rule marks 24 high-volume observations for review. They are retained; unusual values are not automatically errors. In the isolated scratch reproduction, the generated output was verified at 8,936 rows and 12 columns, with no missing values in any processed column. `Traffic Volume` was numeric, finite, nonnegative, and ranged from 4,233 to 72,039.
 
-**Target:** Traffic Volume. A Low / Medium / High label is derived from it
-using cut-offs fixed from the training data only.
-
-**Excluded:** Average Speed, Travel Time Index, Congestion Level, Road Capacity
-Utilization, Incident Reports, Environmental Impact, Pedestrian and Cyclist
-Count (same-time measurements or leakage), plus Public Transport Usage,
-Traffic Signal Compliance and Parking Usage (not known in advance and showed
-no relationship with volume in the EDA).
-
-## Findings that shape the model
-
-- Location is the strongest signal. Road alone explains about 34% of the
-  variance in Traffic Volume (R2 = 0.34).
-- Day of week, month, year and weather show almost no effect on volume
-  (weekend vs weekday -0.7%).
+This is daily, same-day historical data. It contains no future traffic-volume label, time-of-day, queue length, or signal phase. It does not establish support for queue forecasting or adaptive signal control. SUMO observations should be recorded and documented separately from the real-world dataset.

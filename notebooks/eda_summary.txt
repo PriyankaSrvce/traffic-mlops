@@ -2,14 +2,60 @@
 ======================================================================
 1. BASIC INFO
 ======================================================================
-Rows: 8936   Columns: 19
+Raw dataset rows: 8936   Raw dataset columns: 16
+EDA working-table columns (including 3 added calendar fields): 19
 Date range: 2022-01-01 to 2024-08-09
 Distinct dates: 952
+Missing dates in daily range: 0
 Distinct areas: 8
 Distinct roads/intersections: 16
 
+Column data types:
+Date                                  datetime64[ns]
+Area Name                                     object
+Road/Intersection Name                        object
+Traffic Volume                                 int64
+Average Speed                                float64
+Travel Time Index                            float64
+Congestion Level                             float64
+Road Capacity Utilization                    float64
+Incident Reports                               int64
+Environmental Impact                         float64
+Public Transport Usage                       float64
+Traffic Signal Compliance                    float64
+Parking Usage                                float64
+Pedestrian and Cyclist Count                   int64
+Weather Conditions                            object
+Roadwork and Construction Activity            object
+day_of_week                                   object
+month                                          int32
+is_weekend                                      bool
+
 ======================================================================
-2. DATA QUALITY
+2. UNIQUE VALUES
+======================================================================
+Date                                   952
+Area Name                                8
+Road/Intersection Name                  16
+Traffic Volume                        8100
+Average Speed                         8572
+Travel Time Index                     3711
+Congestion Level                      5053
+Road Capacity Utilization             2352
+Incident Reports                        11
+Environmental Impact                  8100
+Public Transport Usage                8936
+Traffic Signal Compliance             8936
+Parking Usage                         8936
+Pedestrian and Cyclist Count           148
+Weather Conditions                       5
+Roadwork and Construction Activity       2
+day_of_week                              7
+month                                   12
+is_weekend                               2
+
+======================================================================
+3. DATA QUALITY
 ======================================================================
 Missing values per column:
 Date                                  0
@@ -36,7 +82,7 @@ Duplicate rows: 0
 Duplicate (Date, Road) pairs: 0
 
 ======================================================================
-3. TRAFFIC VOLUME SUMMARY
+4. TRAFFIC VOLUME SUMMARY
 ======================================================================
 count     8936.0
 mean     29236.0
@@ -51,7 +97,7 @@ IQR outlier bounds: -8555 to 66027
 Rows outside bounds: 24 (0.27%)
 
 ======================================================================
-4. ALL NUMERIC COLUMNS (describe)
+5. ALL NUMERIC COLUMNS (describe)
 ======================================================================
                                count      mean       std      min       25%       50%       75%       max
 Traffic Volume                8936.0  29236.05  13001.81  4233.00  19413.00  27600.00  38058.50  72039.00
@@ -68,7 +114,7 @@ Pedestrian and Cyclist Count  8936.0    114.53     36.81    66.00     94.00    1
 month                         8936.0      5.98      3.34     1.00      3.00      6.00      9.00     12.00
 
 ======================================================================
-5. ROWS PER AREA
+6. ROWS PER AREA
 ======================================================================
                  rows  percent
 Area Name                     
@@ -82,7 +128,7 @@ Yeshwanthpur      734      8.2
 Electronic City   552      6.2
 
 ======================================================================
-6. WEATHER
+7. WEATHER
 ======================================================================
                     rows  percent
 Weather Conditions               
@@ -101,7 +147,7 @@ Clear       29167.0
 Overcast    29053.0
 
 ======================================================================
-7. ROADWORK
+8. ROADWORK
 ======================================================================
                                     rows  percent
 Roadwork and Construction Activity               
@@ -114,7 +160,7 @@ No     29195.0
 Yes    29614.0
 
 ======================================================================
-8. DAY OF WEEK AND WEEKEND vs WEEKDAY
+9. DAY OF WEEK AND WEEKEND vs WEEKDAY
 ======================================================================
 day_of_week
 Monday       29510.0
@@ -130,7 +176,7 @@ Weekend average: 29084
 Weekend vs weekday: -0.7%
 
 ======================================================================
-9. AVERAGE VOLUME BY AREA
+10. AVERAGE VOLUME BY AREA
 ======================================================================
 Area Name
 Koramangala        40832.0
@@ -143,7 +189,7 @@ Yeshwanthpur       18932.0
 Electronic City    16347.0
 
 ======================================================================
-10. AVERAGE VOLUME BY MONTH
+11. AVERAGE VOLUME BY MONTH
 ======================================================================
 month
 1     28830.0
@@ -160,7 +206,7 @@ month
 12    28952.0
 
 ======================================================================
-11. CORRELATION WITH TRAFFIC VOLUME
+12. CORRELATION WITH TRAFFIC VOLUME
 ======================================================================
 Environmental Impact            1.000
 Congestion Level                0.837
@@ -176,4 +222,4 @@ Pedestrian and Cyclist Count   -0.555
 
 Note: columns measured at the same time as volume (speed, congestion, capacity use, etc.) must NOT be model inputs.
 
-Saved plots: plot_day_of_week.png, plot_area.png, plot_weather.png, plot_correlation.png, plot_month.png
+Saved plots: plot_day_of_week.png, plot_area.png, plot_weather.png, plot_correlation.png, plot_month.png, plot_traffic_volume_distribution.png

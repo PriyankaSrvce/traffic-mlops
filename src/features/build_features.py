@@ -1,4 +1,5 @@
 from pathlib import Path
+from math import isfinite
 
 import holidays
 import pandas as pd
@@ -50,6 +51,53 @@ def validate_columns(df: pd.DataFrame) -> None:
     print("\nColumn validation: PASSED")
 
 
+def validate_required_values(df: pd.DataFrame) -> None:
+    """Reject invalid values in fields required by the feature pipeline."""
+    required = [
+        "Date",
+        "Area Name",
+        "Road/Intersection Name",
+        "Traffic Volume",
+        "Weather Conditions",
+        "Roadwork and Construction Activity",
+    ]
+    missing = df[required].isna().sum()
+    blank_text = {
+        column: int(df[column].astype("string").str.strip().eq("").sum())
+        for column in [
+            "Area Name",
+            "Road/Intersection Name",
+            "Weather Conditions",
+            "Roadwork and Construction Activity",
+        ]
+    }
+    problems = {column: int(count) for column, count in missing.items() if count}
+    problems.update(
+        {column: count for column, count in blank_text.items() if count}
+    )
+    if problems:
+        raise ValueError(f"Missing or blank required values: {problems}")
+
+    volume = pd.to_numeric(df["Traffic Volume"], errors="raise")
+    if not volume.map(isfinite).all():
+        raise ValueError("Traffic Volume must contain only finite numbers.")
+    if (volume < 0).any():
+        raise ValueError("Traffic Volume cannot contain negative values.")
+
+    roadwork_values = (
+        df["Roadwork and Construction Activity"]
+        .astype("string")
+        .str.strip()
+        .str.casefold()
+    )
+    invalid_roadwork = sorted(set(roadwork_values) - {"yes", "no"})
+    if invalid_roadwork:
+        raise ValueError(
+            "Unexpected roadwork labels; expected Yes/No, found: "
+            f"{invalid_roadwork}"
+        )
+
+
 def build_features(df: pd.DataFrame) -> pd.DataFrame:
     """Create the core calendar and categorical features."""
 
@@ -72,46 +120,37 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         years=df["Date"].dt.year.unique().tolist()
     )
 
+    holiday_dates = pd.DatetimeIndex(pd.to_datetime(list(india_holidays.keys())))
     df["is_holiday"] = (
-        df["Date"].isin(india_holidays)
+        df["Date"].dt.normalize().isin(holiday_dates)
     ).astype(int)
 
     # -----------------------------
-    # Categorical encoding
+    # Keep labels as strings. The model pipeline fits one-hot encoders on its
+    # training partition so held-out categories cannot affect the mapping.
     # -----------------------------
-    df["area_encoded"] = (
-        df["Area Name"]
-        .astype("category")
-        .cat.codes
-    )
-
-    df["road_encoded"] = (
-        df["Road/Intersection Name"]
-        .astype("category")
-        .cat.codes
-    )
-
-    df["weather_encoded"] = (
-        df["Weather Conditions"]
-        .astype("category")
-        .cat.codes
-    )
+    for column in ["Area Name", "Road/Intersection Name", "Weather Conditions"]:
+        df[column] = df[column].astype("string").str.strip()
 
     # -----------------------------
     # Roadwork flag
     # -----------------------------
-    df["roadwork_flag"] = (
-        df["Roadwork and Construction Activity"] != "No"
-    ).astype(int)
+    roadwork_values = (
+        df["Roadwork and Construction Activity"]
+        .astype("string")
+        .str.strip()
+        .str.casefold()
+    )
+    df["roadwork_flag"] = roadwork_values.eq("yes").astype(int)
 
     print("\nCore features created:")
     print("- day_of_week")
     print("- month")
     print("- is_weekend")
     print("- is_holiday")
-    print("- area_encoded")
-    print("- road_encoded")
-    print("- weather_encoded")
+    print("- Area Name (categorical text for train-fitted encoding)")
+    print("- Road/Intersection Name (categorical text for train-fitted encoding)")
+    print("- Weather Conditions (categorical text for train-fitted encoding)")
     print("- roadwork_flag")
 
     return df
@@ -183,12 +222,12 @@ def add_event_flag(
     return df
 
 
-def flag_outliers_iqr(
+def report_iqr_outliers(
     df: pd.DataFrame,
     column: str = "Traffic Volume",
 ) -> pd.DataFrame:
     """
-    Detect and remove outliers using the IQR method.
+    Report IQR outlier candidates without deleting observations.
     """
 
     df = df.copy()
@@ -226,7 +265,8 @@ def flag_outliers_iqr(
         f"out of {total_rows} ({percentage:.2f}%)"
     )
 
-    return df[~outlier_mask].copy()
+    print("- Outlier candidates are retained for investigation; no rows removed.")
+    return df.copy()
 
 
 def add_interaction_features(
@@ -254,14 +294,15 @@ def add_interaction_features(
 
 def build_final_features(
     df: pd.DataFrame,
+    events_path: Path = EVENTS_PATH,
 ) -> pd.DataFrame:
-    """Run the complete Member C feature-engineering pipeline."""
+    """Build model-ready columns while retaining every valid observation."""
 
     df = build_features(df)
 
-    df = add_event_flag(df)
+    df = add_event_flag(df, events_path=events_path)
 
-    df = flag_outliers_iqr(
+    df = report_iqr_outliers(
         df,
         column="Traffic Volume",
     )
@@ -277,59 +318,57 @@ def build_final_features(
         "is_weekend",
         "is_holiday",
         "is_event_day",
-        "area_encoded",
-        "road_encoded",
-        "weather_encoded",
+        "Area Name",
+        "Road/Intersection Name",
+        "Weather Conditions",
         "roadwork_flag",
         "weekday_flag",
         "Traffic Volume",
     ]
 
-    final_df = df[feature_columns].dropna()
+    final_df = df[feature_columns].copy()
+    missing_rows = final_df.isna().any(axis=1)
+    if missing_rows.any():
+        raise ValueError(
+            f"Prepared features contain missing values in "
+            f"{int(missing_rows.sum())} rows; no rows were silently dropped."
+        )
 
     return final_df
+
+
+def run_pipeline(
+    raw_data_path: Path = RAW_DATA_PATH,
+    events_path: Path = EVENTS_PATH,
+    output_path: Path = OUTPUT_PATH,
+) -> pd.DataFrame:
+    """Validate, prepare and save the feature dataset reproducibly."""
+    df = load_raw(raw_data_path)
+    validate_columns(df)
+    validate_required_values(df)
+    df = remove_leakage_columns(df)
+    features = build_final_features(df, events_path=events_path)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    features.to_csv(output_path, index=False)
+    print(f"\nSaved prepared features to: {output_path}")
+    print(f"Final rows: {len(features)}")
+    print(f"Final columns: {len(features.columns)}")
+    return features
 
 
 if __name__ == "__main__":
 
     print("=" * 60)
-    print("MEMBER C - FEATURE ENGINEERING")
+    print("PERSON 1 - FEATURE PREPARATION")
     print("=" * 60)
 
-    # Load raw data
-    df = load_raw(RAW_DATA_PATH)
-
-    # Validate required columns
-    validate_columns(df)
-
-    # Remove columns identified by Member B
-    df = remove_leakage_columns(df)
-
-    # Build final features
-    features = build_final_features(df)
-
-    # Create output directory
-    OUTPUT_PATH.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    # Save processed features
-    features.to_csv(
-        OUTPUT_PATH,
-        index=False,
-    )
+    features = run_pipeline()
 
     print("\n" + "=" * 60)
     print("FEATURE ENGINEERING COMPLETED")
     print("=" * 60)
 
-    print(f"Final rows: {len(features)}")
-    print(f"Final columns: {len(features.columns)}")
-
     print("\nFinal columns:")
     for column in features.columns:
         print(f"- {column}")
-
-    print("\nSaved to:")
-    print(OUTPUT_PATH)
