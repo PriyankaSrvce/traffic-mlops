@@ -42,7 +42,7 @@ The FastAPI service was started locally against the deployment-candidate model: 
 - Queue data are sparse in the positive-target region; report both all-row and positive-only metrics.
 - Controller evaluations with teleports/collisions are quality failures; predictive control is not shown to be superior.
 - Docker image build and local container API smoke checks passed; no image was published and no service was deployed.
-- GitHub Actions has not been executed. The workflow now runs on `main`, `phase2-*` branch pushes, pull requests, and manual dispatch.
+- GitHub Actions run `43036696130` passed on branch `phase2-completion-20261111` at commit `a85972c`; it ran compile, 34 unit tests, Metaflow graph checks, and Docker build. The gated deployment job was skipped.
 - Local `dvc status` on the handover checkout reports the Phase 1 raw/processed files, `model.pkl`, and OSM/network payloads missing from local cache. No remote status, pull, or push was performed. DVC remote access and lock reconciliation remain unverified; no teammate ownership is assumed. See `reports/phase2_verification_20261111.md`.
 - No hosted model registry, public deployment, production feedback pipeline, or live-signal integration is established.
 - The dataset license remains unverified.

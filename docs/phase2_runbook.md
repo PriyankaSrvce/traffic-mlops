@@ -72,7 +72,7 @@ Endpoints are `/api/v1/health`, `/api/v1/model-info`, and `/api/v1/predict`. The
 
 ## CI, deployment, and remaining external steps
 
-`.github/workflows/phase2-ci.yml` contains unit tests, Python compile checks, Metaflow graph checks, Docker build, and gated deployment jobs. It triggers on `main`, `phase2-*` branch pushes, pull requests, and manual dispatch. It has not yet run on GitHub. DVC remote access and large-file availability remain unverified; do not add credentials to CI.
+`.github/workflows/phase2-ci.yml` contains unit tests, Python compile checks, Metaflow graph checks, Docker build, and gated deployment jobs. It triggers on `main`, `phase2-*` branch pushes, pull requests, and manual dispatch. GitHub run `43036696130` passed on the feature branch; its production deployment job was skipped. DVC remote access and large-file availability remain unverified; do not add credentials to CI.
 
 Render is the selected platform; `render.yaml` disables automatic deploys and pins the expected model SHA. A Render service and stable HTTPS model artifact URL still need configuration. Set `QUEUE_MODEL_URL` in Render, and `RENDER_DEPLOY_HOOK_URL` plus `RENDER_SERVICE_URL` as GitHub Actions secrets in the protected `production` environment. Then dispatch Phase 2 CI from `main` with `deploy_production=true`. No hosted prediction service is currently claimed.
 

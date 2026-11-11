@@ -12,10 +12,10 @@
 
 ## Incomplete or not independently verified
 
-> Latest local verification on 2026-11-11 is recorded in `reports/phase2_verification_20261111.md`. It adds a 34-test pass, fresh Metaflow registry artifact/export verification, current Docker build/runtime checks, and local DVC status findings. The GitHub Actions run and public Render deployment are still unverified.
+> Latest local verification on 2026-11-11 is recorded in `reports/phase2_verification_20261111.md`. It includes a 34-test pass, fresh Metaflow registry artifact/export verification, Docker build/runtime checks, and local DVC status findings. GitHub Actions run `43036696130` subsequently passed on the feature branch; public Render deployment remains unverified.
 
 1. **DVC:** local status found project data/model/network outputs missing from this handover checkout/cache. No DVC remote was contacted. Private authentication, remote availability, and pipeline/lock reconciliation remain unverified.
-2. **CI/CD:** the GitHub Actions workflow now triggers on `main`, `phase2-*` pushes, pull requests, and manual dispatch, but has not run on GitHub yet. Unit tests and both flow graph checks passed locally.
+2. **CI/CD:** the workflow triggers on `main`, `phase2-*` pushes, pull requests, and manual dispatch. GitHub run `43036696130` passed compile, tests, Metaflow graph checks, and Docker build on the feature branch. The gated production deployment job was skipped.
 3. **Deployment:** Render is selected and the blueprint is prepared. No service, model release URL, deploy hook/service URL secrets, deployment, or hosted API is configured.
 4. **Registry:** Metaflow now stores the model bytes, metadata, validation/test metrics, hash, dataset hash, and candidate status as local run artifacts; the local registry verifier and export check passed. A shared hosted Metaflow datastore is not configured.
 5. **Monitoring/governance:** offline reports and monitoring utilities exist, but production prediction logging, drift alerting, feedback collection at a deployed endpoint, and triggered retraining are not demonstrated as a live service.
@@ -24,6 +24,6 @@
 
 ## Scope and limitations
 
-Remaining CI, remote DVC access, and hosted deployment steps are tracked in the latest verification report; no work is assigned to an absent teammate. The Phase 1 daily Traffic Volume baseline remains separate from this Phase 2 simulated queue model. Dataset license status is **unverified**. No live traffic signals, public-road deployment, or real-world predictive benefit is claimed.
+Remaining DVC remote verification and hosted deployment steps are tracked in the latest verification report. The Phase 1 daily Traffic Volume baseline remains separate from this Phase 2 simulated queue model. Dataset license status is **unverified**. No live traffic signals, public-road deployment, or real-world predictive benefit is claimed.
 
 See `docs/phase2_audit_report.md` for the requirement-by-requirement validation table and exact evidence status.

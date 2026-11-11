@@ -35,7 +35,7 @@ The first attempt in the pre-existing scratch environment found `holidays` and `
 
 ## Still not verified / blocked
 
-1. **GitHub Actions:** the CI workflow has not run on GitHub yet. It now triggers for `main`, `phase2-*` branches, pull requests, and manual dispatch. A remote branch push is needed to observe a real Actions result.
+1. **GitHub Actions:** run [`43036696130`](https://github.com/PriyankaSrvce/traffic-mlops/actions/runs/43036696130) completed successfully on branch `phase2-completion-20261111`, commit `a85972c`. The checks-and-image job passed; the gated production deploy job was skipped. This is feature-branch CI evidence, not deployment evidence.
 2. **Render deployment:** Render is selected because the repository already contains a Docker-based Render blueprint. The blueprint now disables automatic deploys; the model SHA is pinned. No Render service exists in the evidence, and `QUEUE_MODEL_URL`, `RENDER_DEPLOY_HOOK_URL`, and `RENDER_SERVICE_URL` are not configured. The model binary must be available at an approved stable HTTPS URL for the service to start healthy.
 3. **DVC:** only local `dvc status` was run in the handover worktree; no remote/cache comparison, pull, or push was performed. Local status reports the Phase 1 raw CSV, processed CSV, `model.pkl`, and four OSM/network outputs missing from the handover checkout/cache. The labeled SUMO dataset and candidate model exist in a separate local project copy and were used for the fresh local training/API checks. The DVC remote was not contacted; its availability/authentication remain unknown. `dvc.yaml`, `dvc.lock`, `.dvc/config`, and DVC pointers were not changed.
 4. **Public release/model hosting:** no model release was published. A trusted HTTPS artifact location must be configured before Render can deploy the model. Do not put model binaries, datasets, or secrets into the Git source branch.
@@ -53,4 +53,4 @@ python flows/bengaluru_queue_model_flow.py --metadata=local --datastore=local ru
 docker build --tag traffic-queue-api:phase2-final .
 ```
 
-The API container smoke test mounted the verified local candidate model read-only and called health, model-info, and prediction endpoints. `dvc status` was run locally only. No remote DVC operations, GitHub Actions, public image push, Render service creation, or hosted deployment was performed.
+The API container smoke test mounted the verified local candidate model read-only and called health, model-info, and prediction endpoints. `dvc status` was run locally only. No remote DVC operations, public image push, Render service creation, or hosted deployment was performed. GitHub Actions run `43036696130` passed after this local verification report was first prepared; the result is recorded in the first item above.

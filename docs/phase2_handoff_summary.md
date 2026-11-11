@@ -13,7 +13,7 @@ The existing `reports/final_results_report.md` is preserved from the repository 
 
 - The OSM queue-model report at `reports/phase2_osm_results.md` records test MAE 0.055003 m and RMSE 0.513549 m versus persistence MAE 0.069353 m and RMSE 0.651288 m on the same 112,176 rows. Positive-queue subset: 2,753 rows, model MAE 2.199547 m and RMSE 3.236860 m. This is synthetic SUMO evidence, not field validation.
 - Two fresh local Metaflow runs are documented as reproducing those metrics. Local run tracking is not a shared hosted registry.
-- The integrated clean branch passed 32 unittest cases in Python 3.12.6 (0 failed/errors). Earlier local Docker/API smoke checks are recorded as passing. GitHub Actions has not yet run.
+- The local suite passed 34 unittest cases in WSL Python 3.12.3. The local Docker/API smoke checks passed. GitHub Actions run `43036696130` passed on the feature branch; its deploy job was skipped.
 - The checked-in `reports/demo_smoke_20261111/` files are captured local responses; the included SUMO screenshot is an actual GUI replay, not a generated mock-up.
 - Controller results do not establish that predictive control is best. The clean medium-300 batch reported mean travel time 531.30 s fixed, 536.10 s adaptive, and 536.74 s predictive.
 
@@ -22,7 +22,7 @@ The existing `reports/final_results_report.md` is preserved from the repository 
 > Latest local test, fresh Metaflow registry, API, Docker, and DVC evidence is in `reports/phase2_verification_20261111.md`.
 
 1. **DVC:** `dvc.yaml` and `dvc.lock` remain unchanged. Local `dvc status` reports data/model/network outputs missing from the handover checkout/cache. Remote state was not checked. Private authentication and pipeline/lock reconciliation remain needed before shared reproduction.
-2. **CI:** workflow now runs for `main`, `phase2-*` branch pushes, pull requests, and manual dispatch. Local checks pass; GitHub Actions has not yet run.
+2. **CI:** workflow now runs for `main`, `phase2-*` branch pushes, pull requests, and manual dispatch. Feature-branch run `43036696130` passed tests, graph checks, and image build. Production deployment remains a separate manual step and has not run.
 3. **Hosted deployment:** Render is selected; its blueprint disables automatic deploys. No Render service, stable model URL, deploy hook, or service URL is configured, so there is no hosted API yet.
 4. **Model registry:** the fresh Metaflow run stores a hash-verified model artifact and record; the local registry/export check passed. There is no shared Metaflow metadata/datastore service configured.
 5. **Monitoring:** PSI and feedback utilities are offline; production telemetry, alerts, and retraining are not running.

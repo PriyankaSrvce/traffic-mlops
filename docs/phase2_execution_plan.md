@@ -10,7 +10,7 @@ No separate course Google Sheet or deployment-platform instruction has been prov
 
 The Phase 2 implementation is being completed as one integrated project. No task is being deferred to an absent teammate. Implemented and verified items are summarized in `docs/phase2_audit_report.md`; remaining tasks are GitHub Actions on a pull request, private DVC access and lock reconciliation, a hosted deployment with protected secrets, and confirmation that local Metaflow lineage meets the course registry requirement.
 
-Execution order: (1) maintain the 60-second queue data/model contract; (2) run leakage-safe training/evaluation and paired controller experiments; (3) run unit/API checks and Metaflow graph checks; (4) build and smoke-test the container; (5) run GitHub CI; (6) configure the hosted model artifact and protected deployment service; (7) perform hosted health/prediction checks. Steps 1-4 have local evidence; steps 5-7 need external GitHub/hosting setup.
+Execution order: (1) maintain the 60-second queue data/model contract; (2) run leakage-safe training/evaluation and paired controller experiments; (3) run unit/API checks and Metaflow graph checks; (4) build and smoke-test the container; (5) run GitHub CI; (6) configure the hosted model artifact and protected deployment service; (7) perform hosted health/prediction checks. Steps 1-5 now have recorded local or feature-branch GitHub evidence. Steps 6-7 still need the hosted model artifact, Render service configuration, protected secrets, and a real hosted smoke check.
 ## Required order and gates
 
 ### 1. Freeze the data and model contract
