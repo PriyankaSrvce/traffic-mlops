@@ -3,8 +3,11 @@ import os
 from pathlib import Path
 
 INPUT_FILE = Path(os.environ.get("SUMO_INPUT_FILE", "data/processed/sumo_queue_observations.csv"))
-OUTPUT_FILE = Path(os.environ.get("SUMO_LABELED_OUTPUT_FILE", "data/processed/sumo_queue_labeled_300s.csv"))
+OUTPUT_FILE = Path(os.environ.get("SUMO_LABELED_OUTPUT_FILE", "data/processed/sumo_queue_labeled_60s.csv"))
 HORIZON_S = 60
+
+if OUTPUT_FILE.exists():
+    raise SystemExit(f"ERROR: Refusing to overwrite existing output: {OUTPUT_FILE}")
 
 with INPUT_FILE.open("r", newline="", encoding="utf-8-sig") as f:
     rows = list(csv.DictReader(f))

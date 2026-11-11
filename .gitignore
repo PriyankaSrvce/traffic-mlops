@@ -20,3 +20,18 @@ models/*.joblib
 reports/*.xml
 reports/*decisions.csv
 reports/*predictions.csv
+
+# Local credentials, environments, and caches
+.venv/
+**/.venv/
+.env.*
+*secret*
+*credential*
+.dvc/config.local
+
+# Keep trained models and generated SUMO artifacts out of Git
+models/**/*.joblib
+sumo/bengaluru_osm/runs/
+sumo/bengaluru_osm/datasets/
+sumo/bengaluru_osm/*.osm
+sumo/bengaluru_osm/*.net.xml

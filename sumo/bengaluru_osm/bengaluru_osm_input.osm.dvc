@@ -1,0 +1,5 @@
+outs:
+- md5: a1e0a0698c09242355e26eecadf872a4
+  size: 176223733
+  hash: md5
+  path: bengaluru_osm_input.osm

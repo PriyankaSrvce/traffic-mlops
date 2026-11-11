@@ -8,7 +8,9 @@ import traci
 
 ROOT = Path(__file__).resolve().parent.parent
 NET_FILE = ROOT / "sumo" / "grid_network_tls.net.xml"
-ROUTE_FILE = ROOT / "sumo" / "traffic.rou.xml"
+ROUTE_FILE = Path(os.environ.get(
+    "SUMO_ROUTE_FILE", str(ROOT / "sumo" / "traffic.rou.xml")
+)).resolve()
 OUTPUT_FILE = Path(os.environ.get("SUMO_OUTPUT_FILE", str(ROOT / "data" / "processed" / "sumo_queue_observations.csv")))
 
 TLS_IDS = ["B1", "B2", "C1", "C2"]
@@ -73,6 +75,9 @@ def main():
         raise FileNotFoundError(f"Network not found: {NET_FILE}")
     if not ROUTE_FILE.exists():
         raise FileNotFoundError(f"Routes not found: {ROUTE_FILE}")
+
+    if OUTPUT_FILE.exists():
+        raise FileExistsError(f"Refusing to overwrite existing observations: {OUTPUT_FILE}")
 
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 

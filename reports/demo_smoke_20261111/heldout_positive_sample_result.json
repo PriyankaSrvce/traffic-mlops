@@ -1,0 +1,12 @@
+{
+  "prediction": {
+    "predicted_queue_length_m": 5.1656687762301035,
+    "target": "queue_length_m_t_plus_60s",
+    "horizon_seconds": 60,
+    "model_version": "bengaluru_queue_hurdle_v1_2026-11",
+    "model_sha256": "72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71"
+  },
+  "observed_future_queue_m": 11.0,
+  "sample_selection": "First held-out test row with positive future queue and positive model prediction; illustrative only, not a performance summary.",
+  "seed": 123
+}

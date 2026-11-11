@@ -1,32 +1,29 @@
-# Future Queue-Prediction Evaluation Plan (Proposal)
+# Phase 2 Queue-Prediction Evaluation
 
-**Status:** Planning only. SUMO data collection, queue-length prediction, adaptive signal control, route rerouting, and deployment have not been implemented or evaluated.
+**Status:** The Phase 2 model and held-out evaluation are implemented for a simulated queue target 60 seconds ahead. This is separate from the Phase 1 same-day daily `Traffic Volume` model and from older archived 300-second experiments.
 
-## Prediction target
+## Target and data partitions
 
-Use the proposed SUMO schema in `docs/sumo_data_specification.md`. At each observation time `t`, predict the same run, intersection, approach, and lane's queue length at exactly `t + 300` seconds. The provisional queue definition and metre unit must be confirmed with Member 3 after the network and measurement method are known. Do not treat the historical daily `Traffic Volume` target as a queue label or combine it with simulated observations.
+At time `t`, predict `queue_length_m_t_plus_60s` for the same `run_id`, intersection, and lane at exactly `t + 60` seconds. The measured physical queue is in metres and follows the contiguous stopped-vehicle rule in `docs/sumo_data_specification.md`. Rows without the exact future observation are excluded by the labeler.
 
-## Data splits and leakage controls
+The current evaluation assigns complete simulation seeds to partitions: train 7/42/2026 (185,896 rows), validation 99 (59,052 rows), and test 123/31415 (112,176 rows). No run crosses partitions. Preprocessing is fitted on training data only; the model-selection threshold is selected on validation data. The held-out test is reserved for final measurement and predeclared quality checks, not future tuning.
 
-- Prefer assigning complete independent simulation runs/scenarios to separate train, validation, and test partitions when enough runs exist, keeping each run/scenario in only one partition.
-- If there are too few independent runs, divide observations into chronological blocks. Purge observations whose future label at `t + 300 seconds` would cross a partition boundary, including the 300-second horizon before that boundary. Exclude rows with unavailable future observations; never join targets across runs, intersections, approaches, lanes, or partitions.
-- Select features and tune models using training and validation data only. Fit preprocessing only on training data. Use the test partition once for final comparison after choices are fixed.
-- Keep current-state inputs restricted to information available at time `t`; the future queue measurement is a label only.
+## Baseline, metrics, and measured results
 
-## Models and metrics
+The persistence baseline predicts the current observed queue as the queue 60 seconds later. Model and persistence scores use the same 112,176 held-out observations.
 
-Start with a **persistence baseline**: predict the queue at `t + 300` to equal the observed queue at `t`. Compare it with a training-mean baseline and candidate regression models (for example, linear regression and tree-based models). Choose/tune candidates on validation data, then report held-out test performance.
+| Metric | Hurdle model | Persistence baseline |
+|---|---:|---:|
+| MAE | 0.055003 m | 0.069353 m |
+| RMSE | 0.513549 m | 0.651288 m |
+| R² | 0.883569 | 0.812737 |
 
-Report MAE and RMSE in **metres**, conditional on Member 3 confirming a queue-length definition measured in metres. If the confirmed measure uses another unit, document the unit and use it consistently instead. Report sample counts alongside scores.
+The target is zero for many test rows. On the 2,753 held-out rows with a positive future queue, the model MAE is 2.199547 m and RMSE is 3.236860 m. Report both overall and positive-target results. These are synthetic simulation metrics, not accuracy measurements on real traffic.
 
-Report overall metrics and, when sample counts support meaningful comparisons, metrics by intersection, approach/lane, and predefined traffic conditions (such as low, moderate, and high demand). Define condition thresholds using training data only; avoid interpreting small groups as reliable comparisons.
+## Evaluate the downstream controller separately
 
-## Separate prediction from traffic-management evaluation
+Queue prediction metrics do not prove that predictive signals improve traffic outcomes. Fixed-time, adaptive, and predictive policies were evaluated separately under matched simulation conditions. Existing results do not show that predictive control is best; consult `reports/phase2_osm_results.md` and `docs/phase2_perimeter_experiment_report.md` for their separate experiments and limitations.
 
-First assess prediction accuracy independently using held-out queue labels. Downstream policy performance is a separate simulation experiment and cannot be inferred from MAE/RMSE alone.
+## Remaining evaluation improvements
 
-After a traffic-management controller and route policy exist, planned experiments should compare them against fixed-time signal plans and baseline routes under matched simulation scenarios, demand, and seeds. Report operational outcomes such as travel time, delay, throughput, and queues. These are future comparisons, not completed experiments or current results.
-
-## Dependencies and open decisions
-
-This plan depends on Member 3 confirming the SUMO network, queue measurement definition and location, sampling cadence, run/scenario metadata, and available current traffic/signal fields, then producing separate timestamped simulation data. It also depends on having enough independent runs and observations to support chronological partitions and subgroup reporting.
+Increase independent runs and scenario diversity, then compare errors by intersection, approach, and traffic condition when sample counts support it. Keep all future labels within their own runs and partitions; if chronological splits are ever used, purge observations whose 60-second labels cross the partition boundary. Do not combine simulated queue labels with the historical daily traffic-volume dataset.

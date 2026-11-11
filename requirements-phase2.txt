@@ -1,0 +1,9 @@
+# Scratch Phase 2 runtime. Python 3.12.6.
+numpy==2.2.6
+pandas==2.3.3
+scikit-learn==1.7.2
+joblib==1.6.0
+metaflow==2.19.41
+fastapi==0.159.1
+uvicorn==0.54.0
+pydantic==2.14.1

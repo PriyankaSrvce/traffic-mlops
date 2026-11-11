@@ -1,0 +1,75 @@
+name: Phase 2 CI
+
+on:
+  push:
+    branches: [main, "phase2-*"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      deploy_production:
+        description: "Trigger Render deployment to the protected production environment"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  checks-and-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned Phase 2 and Phase 1 test dependencies
+        run: python -m pip install -r requirements-phase2.txt -r requirements-test-phase1.txt
+
+      - name: Compile project Python files
+        run: python -m compileall -q src sumo flows scripts tests
+
+      - name: Run complete unit test suite
+        run: python -m unittest discover -s tests -v
+
+      - name: Validate Metaflow graph
+        run: python flows/queue_model_flow.py --metadata=local --datastore=local check
+
+      - name: Validate Bengaluru Metaflow graph
+        run: python flows/bengaluru_queue_model_flow.py --metadata=local --datastore=local check
+
+      - name: Build API container
+        run: docker build --tag traffic-queue-api:ci .
+
+  deploy:
+    needs: checks-and-image
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.deploy_production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - name: Trigger Render deployment after successful checks
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          RENDER_SERVICE_URL: ${{ secrets.RENDER_SERVICE_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ] || [ -z "$RENDER_SERVICE_URL" ]; then
+            echo "Render deployment was requested, but required deployment secrets are not configured."
+            exit 1
+          fi
+          curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK_URL"
+          for attempt in $(seq 1 30); do
+            status=$(curl --silent --output /dev/null --write-out "%{http_code}" --max-time 10 "$RENDER_SERVICE_URL/health" || true)
+            if [ "$status" = "200" ]; then
+              echo "Render service health check passed."
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "Render service did not become healthy within 10 minutes."
+          exit 1

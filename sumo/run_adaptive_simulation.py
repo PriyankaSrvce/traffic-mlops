@@ -8,12 +8,18 @@ import traci
 ROOT = Path(__file__).resolve().parent.parent
 SUMO_DIR = ROOT / "sumo"
 NET_FILE = SUMO_DIR / "grid_network_tls.net.xml"
-ROUTE_FILE = SUMO_DIR / "traffic.rou.xml"
-
+ROUTE_FILE = Path(
+    os.environ.get(
+        "SUMO_ROUTE_FILE",
+        str(SUMO_DIR / "traffic.rou.xml")
+    )
+).resolve()
 REPORT_DIR = ROOT / "reports"
 REPORT_DIR.mkdir(parents=True, exist_ok=True)
 
 SEED = int(os.environ.get("SUMO_SEED", "42"))
+RUN_LABEL = os.environ.get("SUMO_RUN_LABEL", "").strip()
+RUN_SUFFIX = f"_{RUN_LABEL}" if RUN_LABEL else ""
 SIMULATION_END_S = 2100
 GREEN_PHASES = {0, 2}
 MIN_GREEN_S = 20
@@ -21,10 +27,9 @@ MAX_GREEN_S = 60
 GREEN_BASE_S = 20
 SECONDS_PER_HALTING_VEHICLE = 2
 
-DECISIONS_FILE = REPORT_DIR / "adaptive_control_decisions.csv"
-TRIPINFO_FILE = REPORT_DIR / "adaptive_tripinfo.xml"
-SUMMARY_FILE = REPORT_DIR / "adaptive_summary.xml"
-
+DECISIONS_FILE = REPORT_DIR / f"adaptive{RUN_SUFFIX}_seed{SEED}_control_decisions.csv"
+TRIPINFO_FILE = REPORT_DIR / f"adaptive{RUN_SUFFIX}_seed{SEED}_tripinfo.xml"
+SUMMARY_FILE = REPORT_DIR / f"adaptive{RUN_SUFFIX}_seed{SEED}_summary.xml"
 TLS_IDS = ["B1", "B2", "C1", "C2"]
 
 
@@ -32,6 +37,11 @@ def main():
     for file_path in [NET_FILE, ROUTE_FILE]:
         if not file_path.exists():
             raise FileNotFoundError(f"Required file not found: {file_path}")
+
+    existing = [str(path) for path in (DECISIONS_FILE, TRIPINFO_FILE, SUMMARY_FILE)
+                if path.exists()]
+    if existing:
+        raise FileExistsError("Refusing to overwrite existing output(s): " + ", ".join(existing))
 
     sumo_binary = os.environ.get("SUMO_BINARY", "sumo")
 

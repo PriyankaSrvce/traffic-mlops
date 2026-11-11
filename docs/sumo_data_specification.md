@@ -1,42 +1,32 @@
-# Future SUMO Data Specification (Proposal)
+# Implemented Phase 2 SUMO Data Specification
 
-**Status:** Future proposal only. SUMO data collection, queue-label generation, and queue prediction are not implemented. The final network, detector or TraCI collection method, queue definition, and sampling interval must be confirmed with Member 3 before implementation.
+**Status:** Implemented in the current Phase 2 prototype. The code collects timestamped Bengaluru OSM-corridor SUMO observations and labels same-run queue length exactly 60 seconds ahead. This simulated target is separate from the Phase 1 historical daily `Traffic Volume` target.
 
-## Proposed observation schema
+## Observation and label fields
 
-Store one observation per simulation run, timestamp, intersection, and approach/lane. If the chosen simulator network has no lane-level measurement, document the approach-level aggregation instead of inventing lane identifiers.
+The collector writes one row for each sampled lane observation. Its exact field list is defined in `sumo/bengaluru_osm/collect_observations.py`.
 
-| Field | Meaning |
+| Field | Meaning / unit |
 |---|---|
-| `run_id` | Unique simulation execution/seed identifier; required to prevent joining observations across runs. |
-| `simulation_time_s` | Elapsed SUMO simulation time in seconds. A sampling cadence is not yet selected. |
-| `intersection_id` | Stable identifier from the selected network; topology is not yet selected. |
-| `approach_id` | Inbound approach identifier at the intersection. |
-| `lane_id` | Lane identifier when measured per lane; null only when a documented approach-level aggregate is used. |
-| `queue_length_m` | Current queue length in metres at `simulation_time_s`, under the proposed definition below. |
-| `queue_definition_id` | Version/configuration for the queue rule, including speed threshold and measured lane/link segment. |
-| `vehicle_count`, `flow_veh_per_hour`, `mean_speed_mps`, `occupancy_or_density` | Candidate current traffic-state measurements, all measured at or before this observation time. Exact availability and units for occupancy/density remain to be confirmed. |
-| `signal_phase_id`, `signal_state`, `phase_elapsed_s` | Candidate current signal state at the intersection and observation time. Availability and phase semantics depend on Member 3's implementation. |
-| `queue_length_m_t_plus_300s` | Supervised target: queue length in metres for the same run and approach/lane at exactly `simulation_time_s + 300`. |
+| `run_id`, `seed`, `scenario` | Simulation execution ID, reproducibility seed, and low/medium/high demand scenario. |
+| `time_s` | Elapsed SUMO simulation time in seconds. Collector default is every 10 simulation steps; the sampling step can be configured. |
+| `intersection_id`, `approach_id`, `lane_id` | Stable IDs for the signalized intersection, incoming approach, and measured lane. |
+| `queue_length_m` | Physical contiguous stopped queue in metres, measured on the lane. Start with the downstream-most stopped vehicle, include upstream stopped vehicles while bumper gap is at most 2.5 m, and measure from the leading front to the last rear bumper (vehicle bodies and gaps included). A stopped vehicle has speed at or below 0.1 m/s. |
+| `queue_vehicle_count`, `halting_vehicle_count` | Counts of vehicles in the contiguous queue and of all stopped vehicles on the lane, respectively. |
+| `queue_proxy_5m` | Legacy estimate using 5 metres per stopped vehicle. It is not the physical queue measurement or the model target. |
+| `vehicle_count`, `mean_speed_mps`, `waiting_time_s`, `occupancy_pct` | Current lane traffic state: count, mean speed in metres/second, waiting time in seconds, and SUMO occupancy percentage. |
+| `vehicle_type_mix`, `vehicle_composition` | Vehicle-type and composition descriptors for the simulation. The fleet profile is assumed, not measured Bengaluru fleet data. |
+| `signal_phase_id`, `signal_state`, `phase_elapsed_s` | Current signal phase identity/state and elapsed phase time in seconds. |
+| `queue_length_m_t_plus_60s` | Label added by `label_observations.py`: queue length in metres exactly 60 seconds later for the same run, intersection, and lane. |
 
-### Proposed queue measurement
+The trained Bengaluru model uses 11 current-state features: `queue_length_m`, `vehicle_count`, `halting_vehicle_count`, `mean_speed_mps`, `phase_elapsed_s`, `intersection_id`, `approach_id`, `lane_id`, `signal_phase_id`, `signal_state`, and `vehicle_composition`. The target and feature contract is also recorded in `sumo/bengaluru_osm/evaluate_hurdle.py` and the API metadata.
 
-Proposed measurement location: on the measured inbound lane, from its stop line upstream to the rear bumper of the last vehicle in a contiguous stopped queue; include the gaps between queued vehicles. Define a vehicle as queued when its speed is at or below a proposed threshold of **0.1 m/s**. Record zero when no vehicle meets that rule. If the queue reaches beyond the available upstream lane/link segment, flag the measurement as truncated rather than treating the segment length as the true queue length.
+## Label and split rules
 
-This is a concrete proposal, not a confirmed project definition. Member 3 must confirm the speed threshold, whether gaps are included, available measurement segment, truncation handling, and whether measurements are per lane or aggregated per approach after the final network is known.
+The labeler joins by `run_id`, `intersection_id`, and `lane_id` at the exact future timestamp `time_s + 60`. It rejects duplicate observation keys. Rows without that exact future observation are omitted from the labeled output; it does not interpolate or carry labels across runs.
 
-## Future label creation and leakage controls
+The evaluated model partitions complete simulation seeds: training 7/42/2026, validation 99, and held-out test 123/31415. Runs do not cross partitions, preprocessing is fitted on training data, and the decision threshold is selected on validation. The held-out metrics are in `reports/phase2_osm_results.md`.
 
-For each current observation at time `t`, find the observation with the exact same `run_id`, `intersection_id`, `approach_id`, and `lane_id` at `t + 300` seconds. Copy its `queue_length_m` into `queue_length_m_t_plus_300s`. Do not join across runs, approaches, lanes, or approximate timestamps. If the exact future observation is unavailable, keep the row for analysis with a missing target and exclude it from supervised training; do not interpolate or carry a queue value forward.
+## Limits
 
-For future model evaluation, prefer assigning complete independent simulation runs/scenarios to separate train, validation, and test partitions when enough runs exist, keeping each run/scenario in only one partition. If there are too few independent runs, use chronological blocks and purge observations whose `t + 300` label would cross a partition boundary, including the 300-second horizon before the boundary. Exclude observations whose future measurement is unavailable or falls outside its own partition. Fit preprocessing only on training data. Apply any additional purge needed once the sampling cadence is selected.
-
-Keep these simulated observations and labels in a separate dataset location/version from `data/raw/bangalore_traffic.csv` and its daily `Traffic Volume` target. Do not combine the datasets as if their measurements or targets were interchangeable.
-
-## Decisions to confirm with Member 3
-
-- Final SUMO network, intersection/approach/lane identifiers, and observation granularity.
-- Queue measurement mechanism, speed threshold, gap convention, upstream segment, and truncation behavior.
-- Simulation sampling interval and whether every required exact `t + 300` observation will be recorded.
-- Which current traffic and signal-state fields the selected SUMO interface can provide consistently.
-- Run/scenario metadata and separate storage location for simulation outputs.
+This is an OSM-derived, synthetic SUMO corridor, not a field-calibrated Bengaluru-wide traffic system. Demand rates, vehicle mix, and signal plans are assumptions. The queue definition and units describe simulated measurements; they are not field ground truth. The historical dataset license remains **unverified**, and the daily historical data is not treated as SUMO arrivals.
