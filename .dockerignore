@@ -1,0 +1,12 @@
+# Send only what the Dockerfile copies. Keep DVC data, networks, models,
+# reports, local environments and credentials out of the build context.
+**
+!Dockerfile
+!docker_entrypoint.py
+!requirements-api.txt
+!src/
+!src/api/
+!src/api/**
+!sumo/
+!sumo/bengaluru_osm/
+!sumo/bengaluru_osm/bengaluru_model.py

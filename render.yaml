@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: traffic-queue-api
+    runtime: docker
+    plan: free
+    autoDeployTrigger: off
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: QUEUE_MODEL_PATH
+        value: /tmp/queue-model.joblib
+      - key: QUEUE_MODEL_METADATA_PATH
+        value: /app/src/api/bengaluru_deployment_metadata.json
+      - key: QUEUE_MODEL_URL
+        sync: false
+      - key: QUEUE_MODEL_SHA256
+        value: 72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71

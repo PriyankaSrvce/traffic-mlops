@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <input>
+        <net-file value="bengaluru_osm_sim.net.xml"/>
+        <route-files value="traffic.rou.xml"/>
+        <additional-files value="vtypes.add.xml"/>
+    </input>
+    <!-- Departures are generated over 900 s; allow a 3600 s drain for full trips. -->
+    <time><begin value="0"/><end value="3600"/></time>
+    <processing><time-to-teleport value="-1"/></processing>
+    <random_number><seed value="21"/></random_number>
+    <report><no-step-log value="true"/><duration-log.disable value="true"/></report>
+</configuration>

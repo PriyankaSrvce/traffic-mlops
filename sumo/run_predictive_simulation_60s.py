@@ -1,4 +1,5 @@
-﻿import csv
+﻿
+import csv
 import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -6,25 +7,38 @@ from pathlib import Path
 import joblib
 import pandas as pd
 import traci
+from model_contract_60s import FEATURES, validate_model_feature_schema
 
 ROOT = Path(__file__).resolve().parent.parent
 SUMO_DIR = ROOT / "sumo"
 NET_FILE = SUMO_DIR / "grid_network_tls.net.xml"
-ROUTE_FILE = SUMO_DIR / "traffic.rou.xml"
-MODEL_FILE = ROOT / "models" / "sumo_queue_rf_60s.joblib"
+
+ROUTE_FILE = Path(
+    os.environ.get(
+        "SUMO_ROUTE_FILE",
+        str(SUMO_DIR / "traffic.rou.xml")
+    )
+).resolve()
+
+MODEL_FILE = Path(os.environ.get(
+    "SUMO_MODEL_FILE", str(ROOT / "models" / "sumo_queue_rf_60s.joblib")
+)).resolve()
 
 REPORT_DIR = ROOT / "reports"
 REPORT_DIR.mkdir(parents=True, exist_ok=True)
 
 SEED = int(os.environ.get("SUMO_SEED", "42"))
+RUN_LABEL = os.environ.get("SUMO_RUN_LABEL", "").strip()
+RUN_SUFFIX = f"_{RUN_LABEL}" if RUN_LABEL else ""
+
 SIMULATION_END_S = 2100
 
 TLS_IDS = ["B1", "B2", "C1", "C2"]
 GREEN_PHASES = {0, 2}
 
-MIN_GREEN_S = 20
+MIN_GREEN_S = 30
 MAX_GREEN_S = 60
-GREEN_BASE_S = 20
+GREEN_BASE_S = 30
 SECONDS_PER_EQUIVALENT_VEHICLE = 2.0
 
 # Approximate occupied road length per queued vehicle.
@@ -34,24 +48,22 @@ METRES_PER_QUEUED_VEHICLE = 7.5
 STOPPED_SPEED_MPS = 0.1
 MAX_QUEUE_GAP_M = 2.5
 
-TRIPINFO_FILE = REPORT_DIR / f"predictive60s_seed{SEED}_tripinfo.xml"
-SUMMARY_FILE = REPORT_DIR / f"predictive60s_seed{SEED}_summary.xml"
-DECISIONS_FILE = REPORT_DIR / f"predictive60s_seed{SEED}_decisions.csv"
-PREDICTIONS_FILE = REPORT_DIR / f"predictive60s_seed{SEED}_predictions.csv"
-
-FEATURES = [
-    "queue_length_m",
-    "vehicle_count",
-    "halting_vehicle_count",
-    "mean_speed_mps",
-    "phase_elapsed_s",
-    "intersection_id",
-    "approach_id",
-    "lane_id",
-    "signal_phase_id",
-    "signal_state",
-]
-
+TRIPINFO_FILE = (
+    REPORT_DIR /
+    f"predictive60s{RUN_SUFFIX}_seed{SEED}_tripinfo.xml"
+)
+SUMMARY_FILE = (
+    REPORT_DIR /
+    f"predictive60s{RUN_SUFFIX}_seed{SEED}_summary.xml"
+)
+DECISIONS_FILE = (
+    REPORT_DIR /
+    f"predictive60s{RUN_SUFFIX}_seed{SEED}_decisions.csv"
+)
+PREDICTIONS_FILE = (
+    REPORT_DIR /
+    f"predictive60s{RUN_SUFFIX}_seed{SEED}_predictions.csv"
+)
 
 def get_queue_length(lane_id):
     """Use the same queue definition as the training-data collector."""
@@ -149,15 +161,15 @@ def main():
         if not path.exists():
             raise FileNotFoundError(f"Required file not found: {path}")
 
+    existing = [str(path) for path in
+                (TRIPINFO_FILE, SUMMARY_FILE, DECISIONS_FILE, PREDICTIONS_FILE)
+                if path.exists()]
+    if existing:
+        raise FileExistsError("Refusing to overwrite existing output(s): " + ", ".join(existing))
+
     model = joblib.load(MODEL_FILE)
 
-    model_features = list(model.feature_names_in_)
-    if model_features != FEATURES:
-        raise ValueError(
-            "Saved model feature schema differs from the expected schema.\n"
-            f"Expected: {FEATURES}\n"
-            f"Found:    {model_features}"
-        )
+    validate_model_feature_schema(model)
 
     command = [
         os.environ.get("SUMO_BINARY", "sumo"),
@@ -169,10 +181,14 @@ def main():
         "--no-step-log", "true",
         "--tripinfo-output", str(TRIPINFO_FILE),
         "--summary-output", str(SUMMARY_FILE),
+        "--delay", "700",
     ]
 
     print("Starting prediction-driven traffic simulation")
     print("Seed:", SEED)
+    print("Network:", NET_FILE.name)
+    print("Routes:", ROUTE_FILE.name)
+    print("Run label:", RUN_LABEL if RUN_LABEL else "(default)")
     print("Model:", MODEL_FILE.name)
     print("Prediction horizon: 60 seconds")
     print("Green duration limits:", MIN_GREEN_S, "to", MAX_GREEN_S)
@@ -234,7 +250,6 @@ def main():
                             columns=FEATURES,
                         )
 
-                        
                         categorical_features = [
                             "intersection_id",
                             "approach_id",
@@ -244,10 +259,11 @@ def main():
                         ]
 
                         for column in categorical_features:
-                            feature_frame[column] = feature_frame[column].astype(str)
+                            feature_frame[column] = (
+                                feature_frame[column].astype(str)
+                            )
 
                         predicted_queues = model.predict(feature_frame)
-
 
                         for lane_id, features, prediction in zip(
                             intersection_lanes,
@@ -376,8 +392,11 @@ def main():
                     float(trip.get(field, "0"))
                     for trip in trips
                 ) / count
-                print(f"{label}: {average:.2f} s" if field != "routeLength"
-                      else f"{label}: {average:.2f} m")
+
+                if field == "routeLength":
+                    print(f"{label}: {average:.2f} m")
+                else:
+                    print(f"{label}: {average:.2f} s")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,33 @@
+{
+  "network": "bengaluru_osm_sim.net.xml",
+  "anchors": {
+    "silk_board": {"edge": "1208112310#1", "osm_node": "1723812996", "meaning": "Silk Board bus-stop landmark; nearest drivable edge"},
+    "hsr_layout": {"edge": "-133945864", "osm_node": "456016994", "meaning": "HSR Layout suburb marker; nearest drivable edge"},
+    "koramangala": {"edge": "558765859#3", "osm_node": "429918282", "meaning": "Koramangala suburb marker; nearest drivable edge"}
+  },
+  "seed": 21,
+  "duration_s": 900,
+  "warmup_s": 120,
+  "demand": {
+    "low": {"vehicles_per_hour": 180, "note": "assumed scenario rate"},
+    "medium": {"vehicles_per_hour": 420, "note": "assumed scenario rate"},
+    "high": {"vehicles_per_hour": 540, "note": "assumed stress-demand rate revised after 720/hour caused repeated teleports; still not a measured Bengaluru arrival rate"}
+  },
+  "vehicle_shares_assumed": {
+    "two_wheeler": 0.55,
+    "car": 0.25,
+    "auto_rickshaw": 0.12,
+    "bus": 0.04,
+    "truck": 0.04
+  },
+  "vehicle_composition_profiles": {
+    "balanced_assumed": {"two_wheeler": 0.55, "car": 0.25, "auto_rickshaw": 0.12, "bus": 0.04, "truck": 0.04},
+    "motorcycle_heavy_assumed": {"two_wheeler": 0.68, "car": 0.18, "auto_rickshaw": 0.09, "bus": 0.03, "truck": 0.02}
+  },
+  "od_pairs": [
+    ["silk_board", "hsr_layout"], ["hsr_layout", "silk_board"],
+    ["hsr_layout", "koramangala"], ["koramangala", "hsr_layout"],
+    ["silk_board", "koramangala"], ["koramangala", "silk_board"]
+  ],
+  "provenance": "Rates and shares are explicit simulation assumptions; the historical CSV has no hourly arrival, OD, or fleet-composition measurements."
+}

@@ -1,0 +1,5 @@
+outs:
+- md5: 1f58a2d21d1033c546266154256d98ab
+  size: 242307913
+  hash: md5
+  path: bengaluru_osm.net.xml

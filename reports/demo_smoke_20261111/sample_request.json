@@ -1,0 +1,13 @@
+{
+  "lane_id": "lane_0",
+  "mean_speed_mps": 0.8,
+  "signal_phase_id": "phase_1",
+  "signal_state": "green",
+  "halting_vehicle_count": 6,
+  "phase_elapsed_s": 24.0,
+  "vehicle_composition": "balanced_assumed",
+  "intersection_id": "osm_junction_demo",
+  "vehicle_count": 8,
+  "approach_id": "north",
+  "queue_length_m": 12.5
+}

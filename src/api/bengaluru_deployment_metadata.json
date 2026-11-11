@@ -1,0 +1,23 @@
+{
+  "model_version": "bengaluru_queue_hurdle_v1_2026-11",
+  "sha256": "72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71",
+  "target": "queue_length_m_t_plus_60s",
+  "horizon_seconds": 60,
+  "features": [
+    "queue_length_m",
+    "vehicle_count",
+    "halting_vehicle_count",
+    "mean_speed_mps",
+    "phase_elapsed_s",
+    "intersection_id",
+    "approach_id",
+    "lane_id",
+    "signal_phase_id",
+    "signal_state",
+    "vehicle_composition"
+  ],
+  "network": "bengaluru_osm_sim.net.xml",
+  "validation_status": "passed",
+  "activation_status": "eligible_for_review",
+  "queue_measurement_schema": "physical_contiguous_stopped_queue_v2"
+}
