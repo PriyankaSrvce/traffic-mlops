@@ -11,7 +11,7 @@ COPY docker_entrypoint.py ./docker_entrypoint.py
 
 ENV QUEUE_MODEL_PATH=/models/bengaluru_queue_hurdle_v1_2026-11.joblib \
     QUEUE_MODEL_METADATA_PATH=/app/src/api/bengaluru_deployment_metadata.json \
-    QUEUE_MODEL_SHA256=72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71 \
+    QUEUE_MODEL_SHA256=167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b \
     PORT=8000
 EXPOSE 8000
 

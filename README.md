@@ -9,9 +9,9 @@ This repository contains two distinct ML tasks:
 
 The OSM scenario generator defines two-wheelers, cars, auto-rickshaws, buses, and trucks. It uses two assumed fleet profiles (balanced: 55/25/12/4/4%; motorcycle-heavy: 68/18/9/3/2%) and seed-controlled random departure times across a 900-second window. The current labeled dataset records both the assumed profile and lane-level vehicle-type counts when vehicles are present. This is departure-time spread, not a separately modeled driver reaction/startup delay. Fleet shares are assumptions, not measured Bengaluru proportions.
 
-The current Bengaluru queue model uses a held-out seed evaluation. Its reported aggregate MAE/RMSE/R² are 0.0550 m / 0.5135 m / 0.8836 versus persistence at 0.0694 m / 0.6513 m / 0.8127 (112,176 identical test rows). On the 2,753 rows with positive future queues, MAE/RMSE are 2.1995 m / 3.2369 m. The target is sparse, so both results matter. See [the current OSM results report](reports/phase2_osm_results.md) and [the audit](docs/phase2_audit_report.md).
+The current Bengaluru queue model uses a held-out seed evaluation. Its reported aggregate MAE/RMSE/R² are 0.0550 m / 0.5135 m / 0.8836 versus persistence at 0.0694 m / 0.6513 m / 0.8127 (112,176 identical test rows). On the 2,753 rows with positive future queues, MAE/RMSE are 2.1995 m / 3.2369 m. On those same rows persistence scores MAE/RMSE 1.9020 m / 3.4377 m, so the model has a **higher MAE** (+15.6 %) but a lower RMSE (−5.8 %) than persistence there. Most of the aggregate gain comes from the 97.55 % zero-future rows, where persistence keeps predicting queues that have already cleared. On rows with a queue now or 60 s later (3,357), model MAE is 1.832 m vs 2.318 m for persistence. The target is sparse, so report all of these together. Recomputed 2026-11-12; see [the 2026-11-12 verification](reports/phase2_verification_20261112.md).
 
-The predictive controller is implemented and has paired experiment results. Available clean low-demand runs show adaptive control outperforming predictive control on mean trip, waiting, and time-loss metrics; some medium/high runs have teleports/collisions and are quality failures. Do not claim that predictive control is best or that results generalize to real roads.
+The predictive controller is implemented and has paired experiment results. In the clean low-demand runs (3 seeds) fixed-time had the lowest mean travel time (504.08 s vs 507.61 s adaptive, 507.27 s predictive) and the lowest mean waiting time (120.53 s vs 124.15 s / 123.63 s). Adaptive and predictive were within about 0.5 s of each other. The clean medium-300 batch also favoured fixed-time (531.30 / 536.10 / 536.74 s). Other medium and high runs have teleports/collisions and are quality failures. Do not claim that predictive control is best or that results generalize to real roads.
 
 The latest local verification record is [`reports/phase2_verification_20261111.md`](reports/phase2_verification_20261111.md). It separates freshly verified local results from still-unverified GitHub CI, remote DVC, and hosted deployment steps.
 
@@ -28,7 +28,7 @@ The latest local verification record is [`reports/phase2_verification_20261111.m
 | DVC pipeline and pointers | `dvc.yaml`, `dvc.lock`, `*.dvc` |
 | Reports and run instructions | `docs/`, `reports/` |
 
-The deployment candidate described by the API metadata is `models/bengaluru/bengaluru_queue_hurdle_v1_2026-11.joblib` with SHA-256 `72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71`. It is intentionally excluded from the source tree/build image; provide it through an approved, SHA-256-verified artifact source or read-only mount. A distinct Metaflow run model has a different hash and must not be confused with this candidate.
+The model named by the API metadata is the Metaflow run `1794405200312669` artifact, SHA-256 `167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b`. The pinned WSL environment reproduced it byte-for-byte on 2026-11-12. The earlier deployment candidate (SHA-256 `72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71`) is a separately serialized file. Its predictions on all 112,176 test rows match `167b` to within 7.1e-15 m, but its bytes differ, so it will not pass the `167b` integrity check. Model binaries are excluded from the source tree and build image; provide the exact `167b` file through an approved, SHA-256-verified artifact source or read-only mount.
 
 ## Setup and verification
 
@@ -55,25 +55,34 @@ docker build -t traffic-queue-api:local .
 
 Run it with an approved local model mount (PowerShell example):
 
+The model binary is gitignored, so stage the `167b` file first. It can be exported from the Metaflow run with `scripts/model_registry_report.py` or taken from the team's verified handover package:
+
 ```powershell
-$model = (Resolve-Path .\models\bengaluru\bengaluru_queue_hurdle_v1_2026-11.joblib).Path
+$modelPath = ".\models\bengaluru\bengaluru_queue_hurdle_v1_2026-11.joblib"
+if (-not (Test-Path $modelPath)) { throw "Stage the 167b model at $modelPath first (it is not in Git)." }
+if ((Get-FileHash $modelPath -Algorithm SHA256).Hash -ne "167B523FC8C89199F6A8BF0689475272654DB96B59B8A1DA9B8A9986BFF0B13B") { throw "Wrong model file." }
+$model = (Resolve-Path $modelPath).Path
 docker run --rm -p 8000:8000 `
   --mount "type=bind,source=$model,target=/models/bengaluru_queue_hurdle_v1_2026-11.joblib,readonly" `
-  -e QUEUE_MODEL_PATH=/models/bengaluru_queue_hurdle_v1_2026-11.joblib `
-  -e QUEUE_MODEL_METADATA_PATH=/app/src/api/bengaluru_deployment_metadata.json `
-  -e QUEUE_MODEL_SHA256=72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71 `
   traffic-queue-api:local
 ```
 
-The image `traffic-queue-api:phase2-final` was built and run locally against the deployment candidate (SHA-256 `72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71`) mounted read-only. Health, model-info, and prediction all returned HTTP 200. A held-out positive-queue example returned 5.1657 m against an observed 11.0 m label; it is one illustrative row, not a performance summary. The container ran as `apiuser` and was removed after checks. The fresh Metaflow model (SHA-256 `167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b`) is a separate registered artifact. No image was pushed and no public deployment occurred.
+The image's environment already points to the mounted path, the baked-in metadata and the `167b` SHA-256. If the configured hash does not match the file, startup is refused (the entrypoint exits with an error). If no file is mounted, the endpoints return HTTP 503.
+
+History: on 2026-11-11 the image `traffic-queue-api:phase2-final` was built and run locally against the earlier `72bc…` candidate. Health, model-info and prediction returned HTTP 200, and a held-out example returned 5.1657 m against an observed 11.0 m. On 2026-11-12 the `167b` model returned the same 5.1656687762 m for that request through the API and the image entrypoint, but no container was built that day because the local Docker engine was unavailable. No image has been pushed.
 
 ## Metaflow, DVC and CI/CD
 
 Metaflow is used for orchestration and local model artifacts; `scripts/model_registry_report.py` verifies eligible runs and can export a hash-verified artifact. The registry is local in this setup; no shared hosted Metaflow datastore has been established. A local `dvc status` found the raw CSV, processed CSV, `model.pkl`, and OSM/network outputs absent from this checkout/cache. No remote comparison, pull, or push was performed. The branch's sanitized tracked remote entry has no private authentication; remote availability remains unverified. Do not rely on DVC runs until the missing payload and lock/pipeline state are reconciled.
 
-`.github/workflows/phase2-ci.yml` runs tests, Python compilation, Metaflow graph checks, and a Docker build on `main`, `phase2-*` branch pushes, and pull requests. Deployment is a manual, main-only workflow dispatch gated on successful checks. GitHub Actions run [43036696130](https://github.com/PriyankaSrvce/traffic-mlops/actions/runs/43036696130) passed on commit `a85972c` on branch `phase2-completion-20261111`; the deployment job was skipped. Review [the verification report](reports/phase2_verification_20261111.md) and [artifact viva guide](docs/phase2_artifact_viva_guide.md).
+`.github/workflows/phase2-ci.yml` runs tests, Python compilation, Metaflow graph checks, and a Docker build on `main`, `phase2-*` branch pushes, and pull requests. Deployment is a manual, main-only workflow dispatch gated on successful checks. GitHub Actions runs (checked through the GitHub API on 2026-11-12):
+- [43036696130](https://github.com/PriyankaSrvce/traffic-mlops/actions/runs/43036696130) passed on the feature branch (`a85972c`), with deploy skipped.
+- [43039410684](https://github.com/PriyankaSrvce/traffic-mlops/actions/runs/43039410684) passed on `main` (`d858900`), with deploy skipped.
+- [43060494475](https://github.com/PriyankaSrvce/traffic-mlops/actions/runs/43060494475), a manual dispatch on `main` (`d858900`), passed checks and its deploy job (37 s).
 
-Render is the selected deployment platform because a Docker-based blueprint is already present. Automatic deployment is disabled so only the gated workflow can trigger it. A Render service, stable HTTPS model URL, Render deploy hook, and service URL have not been configured; no public deployment is claimed.
+Review [the verification report](reports/phase2_verification_20261112.md) and [artifact viva guide](docs/phase2_artifact_viva_guide.md).
+
+Render is the selected deployment platform because a Docker-based blueprint is already present. Automatic deployment is disabled so only the gated workflow can trigger it. In run 43060494475 the deploy step succeeded. Under this workflow, which fails when the deploy secrets are missing, success means the deploy-hook POST succeeded and the polling loop saw HTTP 200 from `$RENDER_SERVICE_URL/health`. The job log needs a GitHub login and has not been reviewed. The service URL is not recorded in this repository, and no hosted `/model-info` or `/predict` response has been captured, so hosted inference is **not verified**. That deployment was configured with the earlier `72bc…` hash. After this promotion, the file served by `QUEUE_MODEL_URL` must be replaced with the `167b` artifact before the next deploy, or the service will refuse to start.
 
 ## Reproduction and reports
 
