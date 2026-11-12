@@ -13,10 +13,13 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
 docker build -t traffic-queue-api:phase2-demo .
 ```
 
-Start the API with the reviewed model mounted read-only:
+Start the API with the reviewed model mounted read-only. The model is not in Git; stage the Metaflow run `1794405200312669` file (SHA-256 `167b523f…0b13b`) first:
 
 ```powershell
-$model = (Resolve-Path .\models\bengaluru\bengaluru_queue_hurdle_v1_2026-11.joblib).Path
+$modelPath = ".\models\bengaluru\bengaluru_queue_hurdle_v1_2026-11.joblib"
+if (-not (Test-Path $modelPath)) { throw "Stage the 167b model at $modelPath first (it is not in Git)." }
+if ((Get-FileHash $modelPath -Algorithm SHA256).Hash -ne "167B523FC8C89199F6A8BF0689475272654DB96B59B8A1DA9B8A9986BFF0B13B") { throw "Wrong model file." }
+$model = (Resolve-Path $modelPath).Path
 docker run --rm -p 8000:8000 `
   --mount "type=bind,source=$model,target=/models/bengaluru_queue_hurdle_v1_2026-11.joblib,readonly" `
   traffic-queue-api:phase2-demo
@@ -36,4 +39,4 @@ Press `Ctrl+C` in the Docker terminal to stop and remove the container.
 
 ## Recorded output
 
-The actual smoke-test responses are saved under `reports/demo_smoke_20261111/`. They show health, model metadata, a synthetic request, and a held-out positive-queue request/prediction captured on 2026-11-11. The held-out example predicted 5.1657 m for an observed 11.0 m queue; this single row is not a performance metric. Aggregate results are in `reports/phase2_osm_results.md`.
+The actual smoke-test responses are saved under `reports/demo_smoke_20261111/`. They show health, model metadata, a synthetic request, and a held-out positive-queue request/prediction captured on 2026-11-11. The held-out example predicted 5.1657 m for an observed 11.0 m queue; this single row is not a performance metric. Those captures used the earlier `72bc…` file. On 2026-11-12 the `167b` model returned the same 5.1656687762 m for that request through the API (not in a container). Aggregate results are in `reports/phase2_osm_results.md`.
