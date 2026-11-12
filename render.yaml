@@ -16,5 +16,7 @@ services:
         value: /app/src/api/bengaluru_deployment_metadata.json
       - key: QUEUE_MODEL_URL
         sync: false
+      # Metaflow run 1794405200312669 model. QUEUE_MODEL_URL (set in the Render
+      # dashboard) must serve exactly these bytes, or startup fails by design.
       - key: QUEUE_MODEL_SHA256
-        value: 72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71
+        value: 167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b

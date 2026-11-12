@@ -24,7 +24,7 @@ Latest local run: **34 unittest cases passed, 0 failed/errors** in WSL Ubuntu / 
 
 The current labeled input is `sumo/bengaluru_osm/datasets/osm_v2b/training_labels_incident_quarantined.csv`. It contains 357,124 rows after incident quarantine. Train/validation/test are separated by complete seeds: 7/42/2026, 99, and 123/31415. Labels match exactly +60 seconds within the same run, intersection, and lane. The current Metaflow flow delegates to the same evaluator and records local run artifacts.
 
-If the files are DVC-managed, obtain them only through the team's reviewed DVC process. Do not copy model/data into Git. The supplied archive omitted local DVC configuration; DVC remote access remains unverified.
+On `main` the labeled CSV, split files and model binaries are **not tracked by DVC** (`dvc.yaml` holds only Phase 1 stages; the `.dvc` pointers cover the OSM/network files and the Phase 1 CSV). Obtain the CSV from the team's verified handover package and check its SHA-256 is `4e8213df71d3ed2df8bb2995ec195e1610f4398ad37f0e049a4399d9f93a5ffb` before training. Do not copy model or data into Git. DVC remote access remains unverified; configure credentials only privately (for example in `.dvc/config.local`, which is gitignored).
 
 ## Metaflow
 
@@ -55,26 +55,35 @@ The local Metaflow datastore is not a shared registry.
 
 ## API and local HTTP smoke test
 
-The API expects the deployment-candidate model, its SHA-256, and a sanitized metadata file. The model is intentionally outside the Docker image. After building the image and preparing the artifact through an approved local path, run:
+The API expects the Metaflow run `1794405200312669` model (SHA-256 `167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b`) and the sanitized metadata baked into the image. The model is gitignored and intentionally outside the Docker image. Export it with the registry command above, or stage it from the verified handover package, then run:
 
 ```powershell
 docker build -t traffic-queue-api:local .
-$model = (Resolve-Path .\models\bengaluru\bengaluru_queue_hurdle_v1_2026-11.joblib).Path
+$modelPath = ".\models\bengaluru\bengaluru_queue_hurdle_v1_2026-11.joblib"
+if (-not (Test-Path $modelPath)) { throw "Stage the 167b model at $modelPath first (it is not in Git)." }
+if ((Get-FileHash $modelPath -Algorithm SHA256).Hash -ne "167B523FC8C89199F6A8BF0689475272654DB96B59B8A1DA9B8A9986BFF0B13B") { throw "Wrong model file." }
+$model = (Resolve-Path $modelPath).Path
 docker run --rm -p 8000:8000 `
   --mount "type=bind,source=$model,target=/models/bengaluru_queue_hurdle_v1_2026-11.joblib,readonly" `
-  -e QUEUE_MODEL_PATH=/models/bengaluru_queue_hurdle_v1_2026-11.joblib `
-  -e QUEUE_MODEL_METADATA_PATH=/app/src/api/bengaluru_deployment_metadata.json `
-  -e QUEUE_MODEL_SHA256=72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71 `
   traffic-queue-api:local
 ```
 
-Endpoints are `/api/v1/health`, `/api/v1/model-info`, and `/api/v1/predict`. The current API contract uses 11 features and `queue_length_m_t_plus_60s`. A local Docker build/run and endpoint smoke check succeeded in this environment; no image was pushed.
+Without Docker, the same checks can be run from WSL with the pinned venv:
+
+```bash
+QUEUE_MODEL_PATH=<path>/registered-model.joblib \
+QUEUE_MODEL_METADATA_PATH=src/api/bengaluru_deployment_metadata.json \
+QUEUE_MODEL_SHA256=167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b \
+python -m uvicorn src.api.app:app --host 127.0.0.1 --port 8000
+```
+
+Endpoints are `/api/v1/health`, `/api/v1/model-info`, and `/api/v1/predict`. The current API contract uses 11 features and `queue_length_m_t_plus_60s`. A wrong configured hash stops startup; a missing model file gives HTTP 503. A local Docker build/run and endpoint smoke check succeeded on 2026-11-11 with the earlier `72bc…` file. On 2026-11-12 the `167b` model was verified through uvicorn and the image entrypoint, but not in a container (the local Docker engine was unavailable). No image was pushed.
 
 ## CI, deployment, and remaining external steps
 
-`.github/workflows/phase2-ci.yml` contains unit tests, Python compile checks, Metaflow graph checks, Docker build, and gated deployment jobs. It triggers on `main`, `phase2-*` branch pushes, pull requests, and manual dispatch. GitHub run `43036696130` passed on the feature branch; its production deployment job was skipped. DVC remote access and large-file availability remain unverified; do not add credentials to CI.
+`.github/workflows/phase2-ci.yml` contains unit tests, Python compile checks, Metaflow graph checks, Docker build, and gated deployment jobs. It triggers on `main`, `phase2-*` branch pushes, pull requests, and manual dispatch. GitHub run `43036696130` passed on the feature branch (deploy skipped). On `main`, push run `43039410684` passed (deploy skipped), and manual run `43060494475` passed checks and the gated deploy job. DVC remote access and large-file availability remain unverified; do not add credentials to CI.
 
-Render is the selected platform; `render.yaml` disables automatic deploys and pins the expected model SHA. A Render service and stable HTTPS model artifact URL still need configuration. Set `QUEUE_MODEL_URL` in Render, and `RENDER_DEPLOY_HOOK_URL` plus `RENDER_SERVICE_URL` as GitHub Actions secrets in the protected `production` environment. Then dispatch Phase 2 CI from `main` with `deploy_production=true`. No hosted prediction service is currently claimed.
+Render is the selected platform; `render.yaml` disables automatic deploys and pins the expected model SHA, now `167b…`. Run `43060494475` shows that the deploy-hook and service-URL secrets were configured and that `/health` returned 200, under the earlier `72bc…` pin. Before the next deploy, replace the file at Render's `QUEUE_MODEL_URL` with the exact `167b` artifact; otherwise startup is refused by design. Then dispatch Phase 2 CI from `main` with `deploy_production=true`, and record a hosted `/api/v1/model-info` and `/api/v1/predict` response. Hosted inference has not been verified.
 
 ## Important constraints
 

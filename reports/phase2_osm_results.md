@@ -21,7 +21,18 @@ The 11 model inputs are current queue length, vehicle count, halting-vehicle cou
 
 On the positive future-queue subset (2,753 rows), model MAE is 2.199547 m, RMSE 3.236860 m and R² 0.667340. The overall score is influenced by many zero-queue cases. These results are simulation-domain estimates only; they do not establish real-world queue accuracy.
 
-The deployment-candidate artifact referenced by API metadata is `models/bengaluru/bengaluru_queue_hurdle_v1_2026-11.joblib`, SHA-256 `72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71`. A separate Metaflow run artifact has SHA-256 `167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b`; it is a distinct file/version. Both produced identical predictions over the recorded test rows during the local comparison, but the API/deployment metadata selects the first artifact. The selected deployment candidate was freshly loaded by the local Docker API smoke test; the original Phase 1 `model.pkl` was not loaded or verified as a working model.
+Persistence on the same subsets (recomputed 2026-11-12 from the identical 112,176 test rows; see `reports/phase2_verification_20261112.md`):
+
+| Test subset | Rows | Model MAE / RMSE | Persistence MAE / RMSE |
+|---|---:|---:|---:|
+| All rows | 112,176 | 0.0550 / 0.5135 m | 0.0694 / 0.6513 m |
+| Future queue > 0 | 2,753 | 2.1995 / 3.2369 m | **1.9020** / 3.4377 m |
+| Current or future queue > 0 | 3,357 | **1.8321** / 2.9620 m | 2.3175 / 3.7648 m |
+| Future queue = 0 | 109,423 | **0.0010** / 0.0823 m | 0.0232 / 0.3708 m |
+
+On rows whose future queue is positive, the model's MAE is worse than persistence (+15.6 %); its RMSE is better (−5.8 %) and its R² is higher (0.667 vs 0.625). Most of the aggregate improvement comes from rows whose queue clears within 60 s. Do not quote a positive-subset MAE improvement over persistence.
+
+The API metadata now names the Metaflow run `1794405200312669` artifact, SHA-256 `167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b`. It was reproduced byte-for-byte by a fresh run (`1794473115185929`) on 2026-11-12. The earlier deployment candidate `models/bengaluru/bengaluru_queue_hurdle_v1_2026-11.joblib`, SHA-256 `72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71`, is a separately serialized file. When both were loaded with scikit-learn 1.7.2, their predictions on all 112,176 test rows differed by at most 7.1e-15 m, but they are not interchangeable for SHA-256 pinning. The selected deployment candidate was freshly loaded by the local Docker API smoke test; the original Phase 1 `model.pkl` was not loaded or verified as a working model.
 
 ## Controller experiments
 
@@ -41,8 +52,8 @@ The FastAPI service was started locally against the deployment-candidate model: 
 - Synthetic traffic/fleet assumptions are not measured Bengaluru data. Historical daily volume is not an arrival profile.
 - Queue data are sparse in the positive-target region; report both all-row and positive-only metrics.
 - Controller evaluations with teleports/collisions are quality failures; predictive control is not shown to be superior.
-- Docker image build and local container API smoke checks passed; no image was published and no service was deployed.
-- GitHub Actions run `43036696130` passed on branch `phase2-completion-20261111` at commit `a85972c`; it ran compile, 34 unit tests, Metaflow graph checks, and Docker build. The gated deployment job was skipped.
+- Docker image build and local container API smoke checks passed on 2026-11-11 with the `72bc…` artifact; no image was published. The `167b` artifact was verified through the API and the image entrypoint on 2026-11-12, but not inside a built container.
+- GitHub Actions run `43036696130` passed on branch `phase2-completion-20261111` at commit `a85972c`; deploy was skipped. On `main` at `d858900`, push run `43039410684` passed (deploy skipped). Manual run `43060494475` passed checks, and its deploy job succeeded (the Render deploy hook was accepted and `/health` returned 200 inside CI). Hosted `/predict` has not been verified.
 - Local `dvc status` on the handover checkout reports the Phase 1 raw/processed files, `model.pkl`, and OSM/network payloads missing from local cache. No remote status, pull, or push was performed. DVC remote access and lock reconciliation remain unverified; no teammate ownership is assumed. See `reports/phase2_verification_20261111.md`.
 - No hosted model registry, public deployment, production feedback pipeline, or live-signal integration is established.
 - The dataset license remains unverified.

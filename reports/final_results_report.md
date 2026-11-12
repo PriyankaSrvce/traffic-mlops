@@ -1,6 +1,8 @@
 ﻿# AI-Driven Adaptive Traffic Management Using a Digital Twin
 ## Final Experimental Results
 
+> **Scope note (added 2026-11-12):** this report covers an earlier synthetic 4 × 4 grid experiment with single-seed controller comparisons and 300 s / 60 s grid models. It is not the Bengaluru OSM corridor study. For the current Phase 2 model and controller results see `reports/phase2_osm_results.md`. In those results fixed-time control had the lowest mean travel time in every clean batch, and predictive control is not shown to be better. Do not quote the grid percentages below as Phase 2 corridor results.
+
 ### 1. Project Overview
 
 This project combines historical Bengaluru traffic-volume prediction with a SUMO-based digital twin for simulated traffic management. It evaluates queue-length prediction and compares fixed-time, queue-responsive adaptive, and predictive traffic-signal control.
