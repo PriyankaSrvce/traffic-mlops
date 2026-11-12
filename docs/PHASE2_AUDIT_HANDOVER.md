@@ -140,12 +140,12 @@ To overcome extreme zero-inflation, the project implements a **two-stage Hurdle 
 | **Full Evaluation Set** ($N = 112,176$) | **MAE** | **0.0550 m** | 0.0694 m | **20.7% lower error** |
 | | **RMSE** | **0.5135 m** | 0.6513 m | **21.2% lower error** |
 | | **$R^2$** | **0.8836** | 0.8127 | **+0.0709 points** |
-| **Positive-Queue Subset** ($N = 2,753$) | **MAE** | **2.1995 m** | 3.3281 m | *Preliminary 33.9% reduction* |
-| | **RMSE** | **3.2369 m** | 4.8920 m | *Preliminary 33.8% reduction* |
+| **Positive-Queue Subset** ($N = 2,753$) | **MAE** | **2.1995 m** | *Under reconciliation* | *Pending reconciliation* |
+| | **RMSE** | **3.2369 m** | *Under reconciliation* | *Pending reconciliation* |
 
 > [!WARNING]
 > **Persistence Metric Discrepancy Note:**  
-> While the model achieves an MAE of $2.1995\,\text{m}$ on active queues, some project documentation notes recorded persistence MAE as $2.1995\,\text{m}$ rather than $3.3281\,\text{m}$. Therefore, the **$33.9\%$ error reduction must NOT be presented as final verified** until the teammate's original raw evaluation prediction CSV is obtained and recomputed.
+> The candidate hurdle model achieves an MAE of $2.1995\,\text{m}$ on active queues ($N = 2,753$). The positive-subset persistence baseline MAE is currently under team reconciliation due to conflicting historical records. The unverified $3.3281\,\text{m}$ comparison and $33.9\%$ improvement claim have been removed pending re-evaluation of the raw evaluation dataset.
 
 ---
 
@@ -311,7 +311,7 @@ The following physical assets are absent from the local workspace:
 
 ## 14. Known Limitations and Unresolved Discrepancies
 
-1. **Persistence Metric Reconciliation:** Documentation notes differ on whether persistence MAE on positive queues is $2.1995\,\text{m}$ or $3.3281\,\text{m}$.
+1. **Persistence Metric Reconciliation:** The candidate hurdle model achieves an MAE of $2.1995\,\text{m}$ on active queues, while the positive-subset persistence baseline MAE is under reconciliation (unverified $3.3281\,\text{m}$ comparison removed).
 2. **Model Hash Pinned in API:** `src/api/app.py` pins prototype hash `72bc01ba...` instead of canonical Metaflow run hash `167b523f...`.
 3. **DVC Scope Boundary:** DVC does not track Phase 2 simulation datasets.
 4. **Controller Performance:** Open-loop predictive queue switching causes phase hunting; reinforcement learning or model-predictive control (MPC) is required for production stability.
