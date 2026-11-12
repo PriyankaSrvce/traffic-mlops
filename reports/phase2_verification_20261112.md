@@ -83,20 +83,53 @@ The test set feeds two pass/fail acceptance gates only.
 | 43179599071 | pull_request / docs/phase2-audit-handover / 9e764ad | success |
 
 The deploy job fails when its secrets are missing. Its success therefore means the deploy hook was accepted and `/health` returned 200.
-The job logs need a GitHub login and were not read.
+The job logs need a GitHub login and were not read. PR #6 runs `43189496002` (push) and `43191042268` (pull_request) on `ed26279` also passed.
+
+### SUMO controller re-runs (Eclipse SUMO 1.28.0, the version in the recorded `statistics.xml`)
+
+Installed via PyPI (`eclipse-sumo`, `traci`, `sumolib` 1.28.0) into the isolated venv. Commands, run from the project root:
+
+```bash
+python sumo/bengaluru_osm/evaluate_controllers.py --seeds 123,31415,27183 --scenarios low --output-root <out>/low_v1_rerun
+python sumo/bengaluru_osm/evaluate_controllers.py --seeds 101,202,303 --scenarios medium --demand-overrides medium=300 --output-root <out>/medium300_rerun
+```
+
+- Network SHA-256 `d295d34c…` (same file as every recorded run).
+- Predictive controller used the recorded `72bc` model, whose predictions equal `167b`'s.
+- Within each seed, all three controllers used the same route file.
+- The regenerated route files differ from the recorded ones only in line endings (CRLF vs LF); their content is identical.
+
+All 18 runs: status `complete`, every vehicle inserted and completed (45/45 low, 75/75 medium-300), 0 unfinished, 0 teleports, 0 collisions, no errors.
+Every run reproduced the recorded vehicle counts, quality fields and mean travel/waiting times exactly.
+
+| Batch | Fixed TT / WT (s) | Adaptive | Predictive | Predictive − fixed TT by seed (s) |
+|---|---|---|---|---|
+| Low, seeds 123/31415/27183 | **504.08 / 120.53** | 507.61 / 124.15 | 507.27 / 123.63 | +3.18, −1.02, +7.40 |
+| Medium-300, seeds 101/202/303 | **531.30 / 145.16** | 536.10 / 149.94 | 536.74 / 150.60 | +6.44, +5.57, +4.31 |
+
+Predictive control was slower than fixed-time in 5 of 6 paired seeds, and faster in 1 (low seed 31415, by 1.02 s). With 3 seeds per batch,
+no difference is statistically established, and **predictive control is not shown to be better than fixed-time**. The teleport-affected medium/high
+batches were not re-run; they remain quality failures.
+
+### Training-run audit (`osm_v1` vs `osm_v2`)
+
+All 18 dataset runs record the same network SHA-256 (`d295d34c…`, equal to the network file), 900 s duration, 10 s sampling and assumed fleet shares.
+The `osm_v1`/`osm_v2` labels are batch names, not different networks. 9 of the 18 runs have status `quality_failure` (teleports/collisions):
+5 train, 1 validation, 3 test (all six high-demand runs, plus medium seeds 7, 2026 and 123). Rows whose observation or +60 s label time lies within ±60 s of a
+collision or teleport were removed ("incident quarantine"). This is a documented limitation, not a defect.
 
 ## Not verified
 
 - **Hosted inference:** the Render service URL is not recorded. No hosted `/model-info` or `/predict` response exists. The CI deploy used the earlier `72bc` pin.
 - **Docker container with `167b`:** the local Docker Desktop engine failed to start (installation registry keys missing), so no image was built on 2026-11-12. The previous container smoke test (2026-11-11) used `72bc`.
-- **SUMO controller experiments:** not re-run (SUMO not installed). Recorded summaries: fixed-time had the lowest mean travel time in every clean batch (low: 504.08 / 507.61 / 507.27 s; medium-300: 531.30 / 536.10 / 536.74 s for fixed / adaptive / predictive). Other medium/high batches have teleports or collisions.
+- **Teleport-affected SUMO batches (medium seeds 123/27183/31415, medium held-out host, high):** not re-run; they remain quality failures.
 - **DVC remote:** not contacted.
 
 ## Open items
 
 1. Before the next Render deploy, host the exact `167b` file at `QUEUE_MODEL_URL`; the blueprint and image now pin `167b`.
 2. Build and run the container once Docker works, then record hosted `/model-info` and `/predict` responses.
-3. Confirm that `osm_v1`-labelled training runs (low/medium seeds 7, 42, 99) share the network and queue definition of the `osm_v2` runs.
+3. (Resolved) `osm_v1` and `osm_v2` runs share the same network SHA-256; report the 9 quality-failure runs and the ±60 s incident quarantine as a limitation.
 4. The selected threshold (0.99) is at the top of its search grid; report this as a limitation.
 5. Correct the PR #5 audit files (wrong hashes, model type, persistence figures, hash-mismatch behaviour); see the reviewer notes supplied with this record.
 6. Monitoring is offline batch only (PSI, metrics, feedback ledger); there is no live telemetry.
