@@ -15,6 +15,13 @@ The predictive controller is implemented and has paired experiment results. In t
 
 The latest local verification record is [`reports/phase2_verification_20261111.md`](reports/phase2_verification_20261111.md). It separates freshly verified local results from still-unverified GitHub CI, remote DVC, and hosted deployment steps.
 
+## Phase 3: drift, versioning, dashboard, governance
+
+- **Dashboard:** `GET /dashboard` on the API (live: https://traffic-queue-api.onrender.com/dashboard after the next approved deploy) shows pipeline, drift monitoring, model versions, retraining, live CI runs, a live prediction and governance controls.
+- **Drift:** demand surges (600/720 veh/h, unseen) and a synthetic km/h sensor fault were induced and detected. Surges raise MAE by +40 to +59 % → retraining recommended; the sensor fault raises PSI to 0.77 with stable MAE → investigate data pipeline. See [`reports/phase3_drift_versioning_report.md`](reports/phase3_drift_versioning_report.md).
+- **Versioning:** [`registry/model_versions.json`](registry/model_versions.json) lists every version by SHA-256. v2 (`8da60b0e…`, Metaflow run 3) passed the quality gate and promotion checks; v1 (`167b523f…`) stays in production until a human approves deployment.
+- **Governance:** [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md) and [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md).
+
 ## Architecture and important files
 
 | Component | Main files |

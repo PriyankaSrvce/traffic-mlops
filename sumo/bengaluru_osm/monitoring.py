@@ -20,6 +20,14 @@ def psi(reference, current, bins=10):
     ref = ref[np.isfinite(ref)]; cur = cur[np.isfinite(cur)]
     if not len(ref) or not len(cur): return None
     edges = np.unique(np.quantile(ref, np.linspace(0, 1, bins+1)))
+    if len(edges) - 1 < max(2, bins // 2):
+        # Zero-inflated features (e.g. ~97 % zero queues) collapse quantile bins into one,
+        # which would make PSI blind to drift. Give the point mass its own bin and use
+        # quantiles of the remaining reference values for the other bins.
+        low = ref.min(); rest = ref[ref > low]
+        inner = np.unique(np.quantile(rest, np.linspace(0, 1, bins)))[:-1] if len(rest) else np.array([])
+        edges = np.unique(np.concatenate([[np.nextafter(low, np.inf)], inner[inner > low]]))
+        edges = np.concatenate([[-np.inf], edges, [np.inf]])
     if len(edges) < 2: edges = np.array([ref[0]-0.5, ref[0]+0.5])
     edges[0] = -np.inf; edges[-1] = np.inf
     rp = np.histogram(ref, bins=edges)[0] / len(ref)

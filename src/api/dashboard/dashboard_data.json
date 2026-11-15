@@ -1,0 +1,350 @@
+{
+  "generated_utc": "2026-11-15T07:16:08+00:00",
+  "performance": {
+    "test_mae": 0.05500322448431176,
+    "persistence_test_mae": 0.06935,
+    "improvement_pct": 21,
+    "rows": 357124,
+    "runs": 18
+  },
+  "quality": {
+    "tests": 44
+  },
+  "pipeline": [
+    {
+      "stage": "Digital twin",
+      "tool": "SUMO 1.28 + OSM Bengaluru",
+      "status": "verified",
+      "detail": "Simulated corridor, 35 signals; seeded low/medium/high demand runs"
+    },
+    {
+      "stage": "Data & labels",
+      "tool": "Python, DVC",
+      "status": "verified",
+      "detail": "Queue now → queue in 60 s; incident quarantine; dataset SHA-256"
+    },
+    {
+      "stage": "Training pipeline",
+      "tool": "Metaflow",
+      "status": "verified",
+      "detail": "start → train_evaluate → acceptance → end, artifacts per run"
+    },
+    {
+      "stage": "Quality gate",
+      "tool": "Metaflow acceptance step",
+      "status": "verified",
+      "detail": "≥5 % better MAE than persistence, RMSE not worse (val + test)"
+    },
+    {
+      "stage": "Model registry",
+      "tool": "SHA-256 registry",
+      "status": "verified",
+      "detail": "Every version, its run, dataset and stage; rollback target kept"
+    },
+    {
+      "stage": "CI",
+      "tool": "GitHub Actions",
+      "status": "verified",
+      "detail": "Tests, Metaflow graph checks, Docker build on every push/PR"
+    },
+    {
+      "stage": "Deployment",
+      "tool": "Docker → Render",
+      "status": "manual gate",
+      "detail": "Manual approval; container verifies model hash before serving"
+    },
+    {
+      "stage": "Serving",
+      "tool": "FastAPI",
+      "status": "verified",
+      "detail": "/predict, /model-info, /health, this dashboard"
+    },
+    {
+      "stage": "Monitoring",
+      "tool": "PSI + error tracking",
+      "status": "verified",
+      "detail": "Data drift, performance drift, schema checks per batch"
+    }
+  ],
+  "pipeline_loop": "Feedback loop: a performance-drift alert triggers retraining on refreshed SUMO data through the same Metaflow flow and quality gate. The new version is compared with production before a human approves deployment.",
+  "drift": {
+    "policy": {
+      "psi_watch": 0.1,
+      "psi_alert": 0.25,
+      "mae_degradation_alert": 0.25,
+      "unknown_category_alert": 0.01,
+      "quality_gate_margin_vs_persistence": 0.95
+    },
+    "approved_test_mae_m": 0.05500322448431176,
+    "model_sha256": "167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b",
+    "generated_utc": "2026-11-15T07:13:32+00:00",
+    "batches": [
+      {
+        "batch": "normal_test",
+        "label": "Normal (held-out)",
+        "description": "Held-out test runs, same demand range as training",
+        "rows": 112176,
+        "worst_feature": "queue_length_m [occupied lanes]",
+        "worst_psi": 0.01412225968746941,
+        "model_mae": 0.05500322448431176,
+        "persistence_mae": 0.06935305234631294,
+        "mae_change_vs_approved": 0.0,
+        "data_drift_level": "OK",
+        "performance_drift_level": "OK",
+        "action": "NO ACTION",
+        "alerts": []
+      },
+      {
+        "batch": "surge_600",
+        "label": "Surge 600 veh/h",
+        "description": "Unseen rush-hour demand, 11 % above training maximum",
+        "rows": 55556,
+        "worst_feature": "queue_length_m [occupied lanes]",
+        "worst_psi": 0.12338015484749094,
+        "model_mae": 0.08768831060561022,
+        "persistence_mae": 0.09920109439124486,
+        "mae_change_vs_approved": 0.5942394546454459,
+        "data_drift_level": "WATCH",
+        "performance_drift_level": "ALERT",
+        "action": "RETRAINING RECOMMENDED",
+        "alerts": [
+          "DATA DRIFT WATCH: 'queue_length_m [occupied lanes]' PSI=0.123 (watch >= 0.1, alert >= 0.25)",
+          "PERFORMANCE DRIFT ALERT: MAE 0.0877 m is +59% vs approved 0.0550 m; beats persistence by 5 %: True"
+        ]
+      },
+      {
+        "batch": "surge_720",
+        "label": "Surge 720 veh/h",
+        "description": "Unseen severe demand surge",
+        "rows": 63688,
+        "worst_feature": "queue_length_m [occupied lanes]",
+        "worst_psi": 0.16767601559976375,
+        "model_mae": 0.07687406130945555,
+        "persistence_mae": 0.10107185027006658,
+        "mae_change_vs_approved": 0.39762826689155073,
+        "data_drift_level": "WATCH",
+        "performance_drift_level": "ALERT",
+        "action": "RETRAINING RECOMMENDED",
+        "alerts": [
+          "DATA DRIFT WATCH: 'queue_length_m [occupied lanes]' PSI=0.168 (watch >= 0.1, alert >= 0.25)",
+          "PERFORMANCE DRIFT ALERT: MAE 0.0769 m is +40% vs approved 0.0550 m; beats persistence by 5 %: True"
+        ]
+      },
+      {
+        "batch": "sensor_fault_kmh",
+        "label": "Sensor fault",
+        "description": "Synthetic: speed sensor reports km/h instead of m/s",
+        "rows": 112176,
+        "worst_feature": "mean_speed_mps [occupied lanes]",
+        "worst_psi": 0.7646273885053241,
+        "model_mae": 0.05562506731019641,
+        "persistence_mae": 0.06935305234631294,
+        "mae_change_vs_approved": 0.011305570386369146,
+        "data_drift_level": "ALERT",
+        "performance_drift_level": "OK",
+        "action": "INVESTIGATE DATA PIPELINE",
+        "alerts": [
+          "DATA DRIFT ALERT: 'mean_speed_mps [occupied lanes]' PSI=0.765 (watch >= 0.1, alert >= 0.25)"
+        ]
+      }
+    ]
+  },
+  "versions": [
+    {
+      "name": "v0 single Random Forest",
+      "sha256": "b46a0b2990504bf664ecf2f58529144439c14cdac69d6f09727f9f1cd0a0711f",
+      "stage": "rejected",
+      "date": "2026-11 (team, round 1)",
+      "source": "evaluate_models.py, Windows run",
+      "validation_mae": 0.0678,
+      "test_mae": 0.0696,
+      "persistence_test_mae": 0.0694,
+      "reason": "Failed quality gate: test MAE 0.0696 not 5 % better than persistence 0.0694",
+      "rollback_target": false
+    },
+    {
+      "name": "v1 hurdle (DVC build)",
+      "sha256": "72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71",
+      "stage": "superseded",
+      "date": "2026-11 (team, DVC stage bengaluru_model)",
+      "source": "DVC pipeline on Windows",
+      "validation_mae": 0.0513,
+      "test_mae": 0.055,
+      "persistence_test_mae": 0.06935,
+      "reason": "Same predictions as 167b (max diff 7.1e-15 m) but not reproducible by the pinned Metaflow pipeline; replaced so the served bytes match a Metaflow run",
+      "rollback_target": false
+    },
+    {
+      "name": "v1 hurdle (Metaflow)",
+      "sha256": "167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b",
+      "stage": "production",
+      "date": "2026-11-12 (deployed to Render)",
+      "source": "Metaflow BengaluruQueueModelFlow/1794405200312669",
+      "metaflow_run": "BengaluruQueueModelFlow/1794405200312669",
+      "dataset_sha256": "4e8213df71d3ed2df8bb2995ec195e1610f4398ad37f0e049a4399d9f93a5ffb",
+      "training_rows": 357124,
+      "training_runs": 18,
+      "validation_mae": 0.0513,
+      "test_mae": 0.05500322448431176,
+      "persistence_test_mae": 0.06935,
+      "artifact_url": "https://github.com/PriyankaSrvce/traffic-mlops/releases/download/model-167b/bengaluru_queue_hurdle_v1_2026-11.joblib",
+      "reason": "Passed all 4 quality gates (21 % lower MAE than persistence); reproduced bit-for-bit; live API reports this SHA",
+      "rollback_target": true
+    },
+    {
+      "name": "v2 hurdle (drift-retrained)",
+      "sha256": "8da60b0e70a0e38c3e4c5d82eefd47fd170949997e62b9bbf3f573ebb03c0804",
+      "stage": "approved",
+      "date": "2026-11-15 (Metaflow run 3)",
+      "source": "Metaflow BengaluruQueueModelFlow/3 on refreshed data (original + 12 surge runs)",
+      "metaflow_run": "BengaluruQueueModelFlow/3",
+      "dataset_sha256": "177130ea8b0622fd0575d9b2cb3a4c899a522a6e4fb3f02242defefb82fd93c4",
+      "parent_sha256": "167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b",
+      "training_rows": 607924,
+      "training_runs": 30,
+      "validation_mae": 0.051766620068094966,
+      "test_mae": 0.0557631814330094,
+      "persistence_test_mae": 0.0721,
+      "test_set_note": "v2 test split includes surge seeds 123/31415, so its own test MAE is not directly comparable with v1's; see promotion_comparison.json for the same-data comparison",
+      "promotion_checks": {
+        "P1_candidate_passed_quality_gate": true,
+        "P2_no_regression_original_test": true,
+        "P3_improves_surge_test": true,
+        "P3_improves_surge_600_unseen": true,
+        "P3_improves_surge_720_unseen": true
+      },
+      "reason": "Triggered by performance-drift alert (surge MAE +40 to +59 %). Passed quality gate and promotion checks P1-P3: original test 0.0550 -> 0.0527, unseen surge 600 0.0877 -> 0.0758. Deployment awaits human approval (P4)",
+      "rollback_target": false
+    }
+  ],
+  "retraining": {
+    "summary": "Candidate v2 hurdle (drift-retrained) (8da60b0e) vs production v1 hurdle (Metaflow) (167b523f) on identical evaluation sets. Decision: APPROVED_FOR_PROMOTION (awaiting human deployment approval, P4).",
+    "models": [
+      "v1 hurdle (Metaflow) (167b523f)",
+      "v2 hurdle (drift-retrained) (8da60b0e)"
+    ],
+    "rows": [
+      {
+        "label": "Original test (normal demand)",
+        "mae": [
+          0.05500322448431176,
+          0.05267118644051649
+        ],
+        "persistence": 0.06935305234631294
+      },
+      {
+        "label": "Surge test seeds (123, 31415)",
+        "mae": [
+          0.09013935242356756,
+          0.06008494716115288
+        ],
+        "persistence": 0.07586093251594897
+      },
+      {
+        "label": "Unseen surge 600 (seeds 777, 888)",
+        "mae": [
+          0.08768831060561022,
+          0.07581464852385969
+        ],
+        "persistence": 0.09920109439124486
+      },
+      {
+        "label": "Unseen surge 720 (seeds 777, 888)",
+        "mae": [
+          0.07687406130945555,
+          0.07607771771373936
+        ],
+        "persistence": 0.10107185027006658
+      }
+    ],
+    "checks": {
+      "P1_candidate_passed_quality_gate": true,
+      "P2_no_regression_original_test": true,
+      "P3_improves_surge_test": true,
+      "P3_improves_surge_600_unseen": true,
+      "P3_improves_surge_720_unseen": true
+    },
+    "decision": "APPROVED_FOR_PROMOTION (awaiting human deployment approval, P4)"
+  },
+  "governance": [
+    {
+      "area": "Model identity",
+      "control": "Model = SHA-256 of its bytes; API refuses mismatched files",
+      "evidence": "/api/v1/model-info, QUEUE_MODEL_SHA256",
+      "why": "Same file name can hide different bytes; hash makes the live model provable"
+    },
+    {
+      "area": "Versioning",
+      "control": "Append-only registry with stage + reason for every version",
+      "evidence": "registry/model_versions.json",
+      "why": "Reproducibility, audit trail, safe rollback, no cherry-picking"
+    },
+    {
+      "area": "Quality gate",
+      "control": "4 automatic checks vs persistence baseline",
+      "evidence": "Metaflow acceptance step",
+      "why": "A model that cannot beat a free baseline adds risk without benefit"
+    },
+    {
+      "area": "Promotion",
+      "control": "No regression on original test + improves on drift sets + human approval",
+      "evidence": "scripts/model_promotion.py, deploy job",
+      "why": "Fixing drift must not break normal conditions; separation of duties"
+    },
+    {
+      "area": "Data lineage",
+      "control": "DVC + dataset SHA-256; split by whole simulation seed",
+      "evidence": "*.dvc, dataset_sha256",
+      "why": "Exact data behind every result; no leakage between train and test"
+    },
+    {
+      "area": "Monitoring",
+      "control": "PSI (all rows + occupied lanes), MAE vs approved, schema checks",
+      "evidence": "reports/phase3_drift/drift_report.json",
+      "why": "Detects decay before it causes harm; 97 % zero rows hide drift otherwise"
+    },
+    {
+      "area": "Response policy",
+      "control": "Performance alert → retrain; data-only alert → investigate pipeline",
+      "evidence": "drift_detection.py",
+      "why": "Retraining on a faulty sensor feed would bake the fault into the model"
+    },
+    {
+      "area": "Change control",
+      "control": "PR review, CI tests, manual deploy job, auto-deploy off",
+      "evidence": ".github/workflows/phase2-ci.yml, render.yaml",
+      "why": "No unreviewed or untested change reaches users"
+    },
+    {
+      "area": "Security",
+      "control": "Secrets outside git, non-root container, hash check before unpickling",
+      "evidence": ".gitignore, Dockerfile, app.py",
+      "why": "Pickle files can run code; leaked tokens compromise storage"
+    },
+    {
+      "area": "Responsible claims",
+      "control": "Simulation-only scope stated; no claim predictive beats fixed-time",
+      "evidence": "docs/MODEL_CARD.md",
+      "why": "Results from assumed demand must not be presented as field-validated"
+    }
+  ],
+  "sample_request": {
+    "queue_length_m": 4.5,
+    "vehicle_count": 1,
+    "halting_vehicle_count": 1,
+    "mean_speed_mps": 0.0,
+    "phase_elapsed_s": 0.0,
+    "intersection_id": "joinedS_11260122967_11260122969_12067305543_12067305544_#3more",
+    "approach_id": "1110163659#0",
+    "lane_id": "1110163659#0_0",
+    "signal_phase_id": "5",
+    "signal_state": "rrrrrrryyyrrrrrrrrrrrr",
+    "vehicle_composition": "balanced_assumed"
+  },
+  "links": {
+    "repo": "https://github.com/PriyankaSrvce/traffic-mlops",
+    "repo_slug": "PriyankaSrvce/traffic-mlops",
+    "governance": "https://github.com/PriyankaSrvce/traffic-mlops/blob/main/docs/GOVERNANCE.md"
+  },
+  "limitations": "simulated demand on one OSM corridor; not field-validated; drift batches are SUMO scenarios and one synthetic sensor fault"
+}

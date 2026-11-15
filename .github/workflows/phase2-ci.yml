@@ -2,7 +2,7 @@ name: Phase 2 CI
 
 on:
   push:
-    branches: [main, "phase2-*"]
+    branches: [main, "phase2-*", "phase3-*"]
   pull_request:
   workflow_dispatch:
     inputs:

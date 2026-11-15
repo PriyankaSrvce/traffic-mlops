@@ -1,0 +1,79 @@
+{
+  "registry": "Bengaluru OSM 60-second queue model",
+  "identity_rule": "A version is the SHA-256 of the serialized model bytes. Entries are append-only; only stage and reason change.",
+  "stages": [
+    "rejected",
+    "candidate",
+    "approved",
+    "production",
+    "archived"
+  ],
+  "versions": [
+    {
+      "name": "v0 single Random Forest",
+      "sha256": "b46a0b2990504bf664ecf2f58529144439c14cdac69d6f09727f9f1cd0a0711f",
+      "stage": "rejected",
+      "date": "2026-11 (team, round 1)",
+      "source": "evaluate_models.py, Windows run",
+      "validation_mae": 0.0678,
+      "test_mae": 0.0696,
+      "persistence_test_mae": 0.0694,
+      "reason": "Failed quality gate: test MAE 0.0696 not 5 % better than persistence 0.0694",
+      "rollback_target": false
+    },
+    {
+      "name": "v1 hurdle (DVC build)",
+      "sha256": "72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71",
+      "stage": "superseded",
+      "date": "2026-11 (team, DVC stage bengaluru_model)",
+      "source": "DVC pipeline on Windows",
+      "validation_mae": 0.0513,
+      "test_mae": 0.055,
+      "persistence_test_mae": 0.06935,
+      "reason": "Same predictions as 167b (max diff 7.1e-15 m) but not reproducible by the pinned Metaflow pipeline; replaced so the served bytes match a Metaflow run",
+      "rollback_target": false
+    },
+    {
+      "name": "v1 hurdle (Metaflow)",
+      "sha256": "167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b",
+      "stage": "production",
+      "date": "2026-11-12 (deployed to Render)",
+      "source": "Metaflow BengaluruQueueModelFlow/1794405200312669",
+      "metaflow_run": "BengaluruQueueModelFlow/1794405200312669",
+      "dataset_sha256": "4e8213df71d3ed2df8bb2995ec195e1610f4398ad37f0e049a4399d9f93a5ffb",
+      "training_rows": 357124,
+      "training_runs": 18,
+      "validation_mae": 0.0513,
+      "test_mae": 0.05500322448431176,
+      "persistence_test_mae": 0.06935,
+      "artifact_url": "https://github.com/PriyankaSrvce/traffic-mlops/releases/download/model-167b/bengaluru_queue_hurdle_v1_2026-11.joblib",
+      "reason": "Passed all 4 quality gates (21 % lower MAE than persistence); reproduced bit-for-bit; live API reports this SHA",
+      "rollback_target": true
+    },
+    {
+      "name": "v2 hurdle (drift-retrained)",
+      "sha256": "8da60b0e70a0e38c3e4c5d82eefd47fd170949997e62b9bbf3f573ebb03c0804",
+      "stage": "approved",
+      "date": "2026-11-15 (Metaflow run 3)",
+      "source": "Metaflow BengaluruQueueModelFlow/3 on refreshed data (original + 12 surge runs)",
+      "metaflow_run": "BengaluruQueueModelFlow/3",
+      "dataset_sha256": "177130ea8b0622fd0575d9b2cb3a4c899a522a6e4fb3f02242defefb82fd93c4",
+      "parent_sha256": "167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b",
+      "training_rows": 607924,
+      "training_runs": 30,
+      "validation_mae": 0.051766620068094966,
+      "test_mae": 0.0557631814330094,
+      "persistence_test_mae": 0.0721,
+      "test_set_note": "v2 test split includes surge seeds 123/31415, so its own test MAE is not directly comparable with v1's; see promotion_comparison.json for the same-data comparison",
+      "promotion_checks": {
+        "P1_candidate_passed_quality_gate": true,
+        "P2_no_regression_original_test": true,
+        "P3_improves_surge_test": true,
+        "P3_improves_surge_600_unseen": true,
+        "P3_improves_surge_720_unseen": true
+      },
+      "reason": "Triggered by performance-drift alert (surge MAE +40 to +59 %). Passed quality gate and promotion checks P1-P3: original test 0.0550 -> 0.0527, unseen surge 600 0.0877 -> 0.0758. Deployment awaits human approval (P4)",
+      "rollback_target": false
+    }
+  ]
+}

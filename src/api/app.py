@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Annotated,Literal
 import joblib,numpy as np,pandas as pd
 from fastapi import FastAPI,HTTPException
+from fastapi.responses import FileResponse,RedirectResponse
 from pydantic import BaseModel,ConfigDict,Field,field_validator,model_validator
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -18,6 +19,7 @@ DEFAULT_METADATA=ROOT/"models"/"bengaluru"/(MODEL_VERSION+".json")
 FEATURES=["queue_length_m","vehicle_count","halting_vehicle_count","mean_speed_mps","phase_elapsed_s","intersection_id","approach_id","lane_id","signal_phase_id","signal_state","vehicle_composition"]
 TARGET="queue_length_m_t_plus_60s"
 HORIZON_SECONDS=60
+DASHBOARD_DIR=Path(__file__).resolve().parent/"dashboard"
 
 class PredictionRequest(BaseModel):
     model_config=ConfigDict(extra="forbid")
@@ -105,6 +107,19 @@ def create_app(model_path:Path|None=None,metadata_path:Path|None=None)->FastAPI:
         if app.state.model is None:raise HTTPException(status_code=503,detail="Validated Bengaluru model artifact is not configured")
         m=app.state.metadata
         return {"model_version":m["model_version"],"model_sha256":app.state.model_sha256,"target":TARGET,"horizon_seconds":HORIZON_SECONDS,"queue_unit":"metres","queue_measurement":m.get("queue_measurement_schema"),"network":m["network"],"validation_status":m["validation_status"],"features":m["features"]}
+    @app.get("/",include_in_schema=False)
+    def root():
+        return RedirectResponse("/dashboard")
+    @app.get("/dashboard",include_in_schema=False)
+    def dashboard():
+        page=DASHBOARD_DIR/"index.html"
+        if not page.is_file():raise HTTPException(status_code=404,detail="Dashboard is not packaged")
+        return FileResponse(page,media_type="text/html",headers={"Cache-Control":"no-cache"})
+    @app.get("/api/v1/dashboard-data")
+    def dashboard_data():
+        """Versioned Phase 3 snapshot (pipeline, drift, versions, governance) shown on /dashboard."""
+        try:return json.loads((DASHBOARD_DIR/"dashboard_data.json").read_text(encoding="utf-8"))
+        except (OSError,json.JSONDecodeError) as exc:raise HTTPException(status_code=404,detail="Dashboard data is not packaged") from exc
     @app.post("/predict")
     @app.post("/api/v1/predict")
     def predict(request:PredictionRequest):

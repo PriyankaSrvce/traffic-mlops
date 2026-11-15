@@ -1,0 +1,43 @@
+{
+  "generated_utc": "2026-11-15T07:14:57+00:00",
+  "production_sha256": "167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b",
+  "candidate_sha256": "8da60b0e70a0e38c3e4c5d82eefd47fd170949997e62b9bbf3f573ebb03c0804",
+  "policy": {
+    "regression_tolerance": 1.02
+  },
+  "evaluation": {
+    "original_test": {
+      "rows": 112176,
+      "persistence_mae_m": 0.06935305234631294,
+      "production_mae_m": 0.05500322448431176,
+      "candidate_mae_m": 0.05267118644051649
+    },
+    "surge_test": {
+      "rows": 80256,
+      "persistence_mae_m": 0.07586093251594897,
+      "production_mae_m": 0.09013935242356756,
+      "candidate_mae_m": 0.06008494716115288
+    },
+    "surge_600_unseen": {
+      "rows": 55556,
+      "persistence_mae_m": 0.09920109439124486,
+      "production_mae_m": 0.08768831060561022,
+      "candidate_mae_m": 0.07581464852385969
+    },
+    "surge_720_unseen": {
+      "rows": 63688,
+      "persistence_mae_m": 0.10107185027006658,
+      "production_mae_m": 0.07687406130945555,
+      "candidate_mae_m": 0.07607771771373936
+    }
+  },
+  "checks": {
+    "P1_candidate_passed_quality_gate": true,
+    "P2_no_regression_original_test": true,
+    "P3_improves_surge_test": true,
+    "P3_improves_surge_600_unseen": true,
+    "P3_improves_surge_720_unseen": true
+  },
+  "decision": "APPROVED_FOR_PROMOTION (awaiting human deployment approval, P4)",
+  "promote": true
+}

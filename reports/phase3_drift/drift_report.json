@@ -1,0 +1,332 @@
+{
+  "generated_utc": "2026-11-15T07:13:32+00:00",
+  "model_version": "bengaluru_queue_hurdle_v1_2026-11_metaflow_1794405200312669",
+  "model_sha256": "167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b",
+  "reference": "train.csv",
+  "policy": {
+    "psi_watch": 0.1,
+    "psi_alert": 0.25,
+    "mae_degradation_alert": 0.25,
+    "unknown_category_alert": 0.01,
+    "quality_gate_margin_vs_persistence": 0.95
+  },
+  "approved_test_mae_m": 0.05500322448431176,
+  "batches": [
+    {
+      "batch": "normal_test",
+      "rows": 112176,
+      "zero_queue_share": 0.9754582085294538,
+      "occupied_lane_share": 0.03616638140065611,
+      "feature_psi": {
+        "queue_length_m": 0.0005759178180575402,
+        "vehicle_count": 0.0001522549997418468,
+        "halting_vehicle_count": 0.00016208027053051704,
+        "mean_speed_mps": 0.00027306705543655703,
+        "phase_elapsed_s": 1.1544648098403539e-05,
+        "queue_length_m_t_plus_60s": 0.00038947413208181283,
+        "queue_length_m [occupied lanes]": 0.01412225968746941,
+        "vehicle_count [occupied lanes]": 0.0006658142219699915,
+        "halting_vehicle_count [occupied lanes]": 0.0020713080216988545,
+        "mean_speed_mps [occupied lanes]": 0.005682054655080871,
+        "phase_elapsed_s [occupied lanes]": 0.001140823638907527,
+        "queue_length_m_t_plus_60s [occupied lanes]": 0.003539060924184038
+      },
+      "worst_feature": "queue_length_m [occupied lanes]",
+      "data_drift_level": "OK",
+      "performance_drift_level": "OK",
+      "model_metrics": {
+        "n": 112176,
+        "mae_m": 0.05500322448431176,
+        "rmse_m": 0.5135494608680082,
+        "r2": 0.8835687104268753
+      },
+      "persistence_metrics": {
+        "n": 112176,
+        "mae_m": 0.06935305234631294,
+        "rmse_m": 0.651287850927746,
+        "r2": 0.8127373752621305
+      },
+      "model_metrics_positive_target": {
+        "n": 2753,
+        "mae_m": 2.1995468970929335,
+        "rmse_m": 3.2368599868177794,
+        "r2": 0.6673401978131158
+      },
+      "mae_change_vs_approved": 0.0,
+      "beats_persistence_by_5pct": true,
+      "categorical_coverage": {
+        "intersection_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 35,
+          "current_categories": 35
+        },
+        "approach_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 39,
+          "current_categories": 39
+        },
+        "lane_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 76,
+          "current_categories": 76
+        },
+        "signal_phase_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 16,
+          "current_categories": 16
+        },
+        "signal_state": {
+          "unknown_rate": 0.0,
+          "reference_categories": 28,
+          "current_categories": 28
+        },
+        "vehicle_composition": {
+          "unknown_rate": 0.0,
+          "reference_categories": 2,
+          "current_categories": 2
+        }
+      },
+      "alerts": [],
+      "action": "NO ACTION"
+    },
+    {
+      "batch": "surge_600",
+      "rows": 55556,
+      "zero_queue_share": 0.9667362661098711,
+      "occupied_lane_share": 0.04737562099503204,
+      "feature_psi": {
+        "queue_length_m": 0.00680948443496717,
+        "vehicle_count": 0.0035729074950257684,
+        "halting_vehicle_count": 0.0032516106266126275,
+        "mean_speed_mps": 0.0011435461315412725,
+        "phase_elapsed_s": 7.617417283493534e-06,
+        "queue_length_m_t_plus_60s": 0.006866924327164407,
+        "queue_length_m [occupied lanes]": 0.12338015484749094,
+        "vehicle_count [occupied lanes]": 0.04661379637616002,
+        "halting_vehicle_count [occupied lanes]": 0.02836795111373754,
+        "mean_speed_mps [occupied lanes]": 0.009706691713167424,
+        "phase_elapsed_s [occupied lanes]": 0.0010061460444890033,
+        "queue_length_m_t_plus_60s [occupied lanes]": 0.08666959326568784
+      },
+      "worst_feature": "queue_length_m [occupied lanes]",
+      "data_drift_level": "WATCH",
+      "performance_drift_level": "ALERT",
+      "model_metrics": {
+        "n": 55556,
+        "mae_m": 0.08768831060561022,
+        "rmse_m": 0.829634006020609,
+        "r2": 0.8444358165125009
+      },
+      "persistence_metrics": {
+        "n": 55556,
+        "mae_m": 0.09920109439124486,
+        "rmse_m": 0.8533538677063647,
+        "r2": 0.8354132589253653
+      },
+      "model_metrics_positive_target": {
+        "n": 1848,
+        "mae_m": 2.5785548142293404,
+        "rmse_m": 4.489526118958388,
+        "r2": 0.4371167764068208
+      },
+      "mae_change_vs_approved": 0.5942394546454459,
+      "beats_persistence_by_5pct": true,
+      "categorical_coverage": {
+        "intersection_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 35,
+          "current_categories": 35
+        },
+        "approach_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 39,
+          "current_categories": 39
+        },
+        "lane_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 76,
+          "current_categories": 76
+        },
+        "signal_phase_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 16,
+          "current_categories": 16
+        },
+        "signal_state": {
+          "unknown_rate": 0.0,
+          "reference_categories": 28,
+          "current_categories": 28
+        },
+        "vehicle_composition": {
+          "unknown_rate": 0.0,
+          "reference_categories": 2,
+          "current_categories": 1
+        }
+      },
+      "alerts": [
+        "DATA DRIFT WATCH: 'queue_length_m [occupied lanes]' PSI=0.123 (watch >= 0.1, alert >= 0.25)",
+        "PERFORMANCE DRIFT ALERT: MAE 0.0877 m is +59% vs approved 0.0550 m; beats persistence by 5 %: True"
+      ],
+      "action": "RETRAINING RECOMMENDED"
+    },
+    {
+      "batch": "surge_720",
+      "rows": 63688,
+      "zero_queue_share": 0.966697022987062,
+      "occupied_lane_share": 0.04771699535234267,
+      "feature_psi": {
+        "queue_length_m": 0.010780144965886258,
+        "vehicle_count": 0.0040973699795033534,
+        "halting_vehicle_count": 0.0035573334431513513,
+        "mean_speed_mps": 0.0009907760372040457,
+        "phase_elapsed_s": 4.950372317838393e-06,
+        "queue_length_m_t_plus_60s": 0.010795877449075992,
+        "queue_length_m [occupied lanes]": 0.16767601559976375,
+        "vehicle_count [occupied lanes]": 0.04497727495651547,
+        "halting_vehicle_count [occupied lanes]": 0.04382255460031898,
+        "mean_speed_mps [occupied lanes]": 0.0048237957476570704,
+        "phase_elapsed_s [occupied lanes]": 0.00031616181999095304,
+        "queue_length_m_t_plus_60s [occupied lanes]": 0.13506295179771732
+      },
+      "worst_feature": "queue_length_m [occupied lanes]",
+      "data_drift_level": "WATCH",
+      "performance_drift_level": "ALERT",
+      "model_metrics": {
+        "n": 63688,
+        "mae_m": 0.07687406130945555,
+        "rmse_m": 0.660295511887628,
+        "r2": 0.912958825196916
+      },
+      "persistence_metrics": {
+        "n": 63688,
+        "mae_m": 0.10107185027006658,
+        "rmse_m": 0.8575551361757795,
+        "r2": 0.8531844155657926
+      },
+      "model_metrics_positive_target": {
+        "n": 2121,
+        "mae_m": 2.2031313256509213,
+        "rmse_m": 3.4946184621044734,
+        "r2": 0.6762222769662687
+      },
+      "mae_change_vs_approved": 0.39762826689155073,
+      "beats_persistence_by_5pct": true,
+      "categorical_coverage": {
+        "intersection_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 35,
+          "current_categories": 35
+        },
+        "approach_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 39,
+          "current_categories": 39
+        },
+        "lane_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 76,
+          "current_categories": 76
+        },
+        "signal_phase_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 16,
+          "current_categories": 16
+        },
+        "signal_state": {
+          "unknown_rate": 0.0,
+          "reference_categories": 28,
+          "current_categories": 28
+        },
+        "vehicle_composition": {
+          "unknown_rate": 0.0,
+          "reference_categories": 2,
+          "current_categories": 1
+        }
+      },
+      "alerts": [
+        "DATA DRIFT WATCH: 'queue_length_m [occupied lanes]' PSI=0.168 (watch >= 0.1, alert >= 0.25)",
+        "PERFORMANCE DRIFT ALERT: MAE 0.0769 m is +40% vs approved 0.0550 m; beats persistence by 5 %: True"
+      ],
+      "action": "RETRAINING RECOMMENDED"
+    },
+    {
+      "batch": "sensor_fault_kmh",
+      "rows": 112176,
+      "zero_queue_share": 0.9754582085294538,
+      "occupied_lane_share": 0.03616638140065611,
+      "feature_psi": {
+        "queue_length_m": 0.0005759178180575402,
+        "vehicle_count": 0.0001522549997418468,
+        "halting_vehicle_count": 0.00016208027053051704,
+        "mean_speed_mps": 0.028547323764766756,
+        "phase_elapsed_s": 1.1544648098403539e-05,
+        "queue_length_m_t_plus_60s": 0.00038947413208181283,
+        "queue_length_m [occupied lanes]": 0.01412225968746941,
+        "vehicle_count [occupied lanes]": 0.0006658142219699915,
+        "halting_vehicle_count [occupied lanes]": 0.0020713080216988545,
+        "mean_speed_mps [occupied lanes]": 0.7646273885053241,
+        "phase_elapsed_s [occupied lanes]": 0.001140823638907527,
+        "queue_length_m_t_plus_60s [occupied lanes]": 0.003539060924184038
+      },
+      "worst_feature": "mean_speed_mps [occupied lanes]",
+      "data_drift_level": "ALERT",
+      "performance_drift_level": "OK",
+      "model_metrics": {
+        "n": 112176,
+        "mae_m": 0.05562506731019641,
+        "rmse_m": 0.5184405326706142,
+        "r2": 0.8813403539003098
+      },
+      "persistence_metrics": {
+        "n": 112176,
+        "mae_m": 0.06935305234631294,
+        "rmse_m": 0.651287850927746,
+        "r2": 0.8127373752621305
+      },
+      "model_metrics_positive_target": {
+        "n": 2753,
+        "mae_m": 2.2320806255983534,
+        "rmse_m": 3.275816200120829,
+        "r2": 0.6592847680108198
+      },
+      "mae_change_vs_approved": 0.011305570386369146,
+      "beats_persistence_by_5pct": true,
+      "categorical_coverage": {
+        "intersection_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 35,
+          "current_categories": 35
+        },
+        "approach_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 39,
+          "current_categories": 39
+        },
+        "lane_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 76,
+          "current_categories": 76
+        },
+        "signal_phase_id": {
+          "unknown_rate": 0.0,
+          "reference_categories": 16,
+          "current_categories": 16
+        },
+        "signal_state": {
+          "unknown_rate": 0.0,
+          "reference_categories": 28,
+          "current_categories": 28
+        },
+        "vehicle_composition": {
+          "unknown_rate": 0.0,
+          "reference_categories": 2,
+          "current_categories": 2
+        }
+      },
+      "alerts": [
+        "DATA DRIFT ALERT: 'mean_speed_mps [occupied lanes]' PSI=0.765 (watch >= 0.1, alert >= 0.25)"
+      ],
+      "action": "INVESTIGATE DATA PIPELINE"
+    }
+  ]
+}
