@@ -1,0 +1,561 @@
+{
+  "generated_utc": "2026-11-16T18:01:40+00:00",
+  "tool": "evidently 0.7.23",
+  "reference": "approved held-out test set, balanced vehicle mix (seed 123)",
+  "composition_filter": "balanced_assumed",
+  "reference_rows": 54036,
+  "numerical_columns": [
+    "queue_length_m",
+    "vehicle_count",
+    "halting_vehicle_count",
+    "mean_speed_mps",
+    "phase_elapsed_s"
+  ],
+  "categorical_columns": [
+    "intersection_id",
+    "signal_phase_id",
+    "vehicle_composition"
+  ],
+  "batches": {
+    "normal_validation": {
+      "rows": 59052,
+      "all_rows": {
+        "drifted_columns": {
+          "count": 0,
+          "share": 0.0
+        },
+        "drifted_column_names": [],
+        "columns": {
+          "queue_length_m": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.009307943120708304,
+            "drift_detected": false
+          },
+          "vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.010558978000836395,
+            "drift_detected": false
+          },
+          "halting_vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.009098745469697881,
+            "drift_detected": false
+          },
+          "mean_speed_mps": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.0037548818327428676,
+            "drift_detected": false
+          },
+          "phase_elapsed_s": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.0013061747928858089,
+            "drift_detected": false
+          },
+          "intersection_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          },
+          "signal_phase_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.007842742390164536,
+            "drift_detected": false
+          },
+          "vehicle_composition": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          }
+        },
+        "model_quality": {
+          "rmse_m": 0.4831723457289429,
+          "mae_m": 0.051290759793830486,
+          "r2": 0.9113308944461512
+        },
+        "reference_rows": 54036,
+        "current_rows": 59052
+      },
+      "occupied_lanes": {
+        "drifted_columns": {
+          "count": 0,
+          "share": 0.0
+        },
+        "drifted_column_names": [],
+        "columns": {
+          "queue_length_m": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.06570113831386976,
+            "drift_detected": false
+          },
+          "vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.09358918306638773,
+            "drift_detected": false
+          },
+          "halting_vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.06848501342325561,
+            "drift_detected": false
+          },
+          "mean_speed_mps": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.02013111513363437,
+            "drift_detected": false
+          },
+          "phase_elapsed_s": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.018480383064599554,
+            "drift_detected": false
+          },
+          "intersection_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0711813291395518,
+            "drift_detected": false
+          },
+          "signal_phase_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.04087663024706774,
+            "drift_detected": false
+          },
+          "vehicle_composition": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          }
+        },
+        "model_quality": {
+          "rmse_m": 1.8672202013940733,
+          "mae_m": 0.8351791727907686,
+          "r2": 0.9091886522363468
+        },
+        "reference_rows": 2084,
+        "current_rows": 2288,
+        "html": "normal_validation_occupied_lanes.html"
+      }
+    },
+    "surge_600": {
+      "rows": 55556,
+      "all_rows": {
+        "drifted_columns": {
+          "count": 0,
+          "share": 0.0
+        },
+        "drifted_column_names": [],
+        "columns": {
+          "queue_length_m": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.057181644055213275,
+            "drift_detected": false
+          },
+          "vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.061152685198832116,
+            "drift_detected": false
+          },
+          "halting_vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.05437985354735255,
+            "drift_detected": false
+          },
+          "mean_speed_mps": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.017191578774526747,
+            "drift_detected": false
+          },
+          "phase_elapsed_s": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.004892819642348613,
+            "drift_detected": false
+          },
+          "intersection_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          },
+          "signal_phase_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.009238406426854164,
+            "drift_detected": false
+          },
+          "vehicle_composition": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          }
+        },
+        "model_quality": {
+          "rmse_m": 0.829634006020609,
+          "mae_m": 0.08768831060561022,
+          "r2": 0.8444358165125009
+        },
+        "reference_rows": 54036,
+        "current_rows": 55556
+      },
+      "occupied_lanes": {
+        "drifted_columns": {
+          "count": 3,
+          "share": 0.375
+        },
+        "drifted_column_names": [
+          "halting_vehicle_count",
+          "queue_length_m",
+          "vehicle_count"
+        ],
+        "columns": {
+          "queue_length_m": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.14970032496078606,
+            "drift_detected": true
+          },
+          "vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.1719982757104509,
+            "drift_detected": true
+          },
+          "halting_vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.1290637975355567,
+            "drift_detected": true
+          },
+          "mean_speed_mps": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.02506097053577997,
+            "drift_detected": false
+          },
+          "phase_elapsed_s": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.04529907908242836,
+            "drift_detected": false
+          },
+          "intersection_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.07714660909069629,
+            "drift_detected": false
+          },
+          "signal_phase_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.040266525427789156,
+            "drift_detected": false
+          },
+          "vehicle_composition": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          }
+        },
+        "model_quality": {
+          "rmse_m": 3.4959304506366915,
+          "mae_m": 1.4360333525855933,
+          "r2": 0.7532706690020523
+        },
+        "reference_rows": 2084,
+        "current_rows": 2632,
+        "html": "surge_600_occupied_lanes.html"
+      }
+    },
+    "surge_720": {
+      "rows": 63688,
+      "all_rows": {
+        "drifted_columns": {
+          "count": 0,
+          "share": 0.0
+        },
+        "drifted_column_names": [],
+        "columns": {
+          "queue_length_m": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.07221563134774045,
+            "drift_detected": false
+          },
+          "vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.06783892483786844,
+            "drift_detected": false
+          },
+          "halting_vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.06081231927191971,
+            "drift_detected": false
+          },
+          "mean_speed_mps": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.021051248170578133,
+            "drift_detected": false
+          },
+          "phase_elapsed_s": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.0034237481335660596,
+            "drift_detected": false
+          },
+          "intersection_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          },
+          "signal_phase_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.008631345547230527,
+            "drift_detected": false
+          },
+          "vehicle_composition": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          }
+        },
+        "model_quality": {
+          "rmse_m": 0.660295511887628,
+          "mae_m": 0.07687406130945555,
+          "r2": 0.912958825196916
+        },
+        "reference_rows": 54036,
+        "current_rows": 63688
+      },
+      "occupied_lanes": {
+        "drifted_columns": {
+          "count": 3,
+          "share": 0.375
+        },
+        "drifted_column_names": [
+          "halting_vehicle_count",
+          "queue_length_m",
+          "vehicle_count"
+        ],
+        "columns": {
+          "queue_length_m": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.22439036939437487,
+            "drift_detected": true
+          },
+          "vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.2090158570465611,
+            "drift_detected": true
+          },
+          "halting_vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.15832147270769967,
+            "drift_detected": true
+          },
+          "mean_speed_mps": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.014281171877492923,
+            "drift_detected": false
+          },
+          "phase_elapsed_s": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.01762256025277958,
+            "drift_detected": false
+          },
+          "intersection_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.05322255336780165,
+            "drift_detected": false
+          },
+          "signal_phase_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.042790066521734255,
+            "drift_detected": false
+          },
+          "vehicle_composition": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          }
+        },
+        "model_quality": {
+          "rmse_m": 2.522964384359885,
+          "mae_m": 1.1527355105878927,
+          "r2": 0.8838992289586325
+        },
+        "reference_rows": 2084,
+        "current_rows": 3039,
+        "html": "surge_720_occupied_lanes.html"
+      }
+    },
+    "sensor_fault_kmh": {
+      "rows": 54036,
+      "all_rows": {
+        "drifted_columns": {
+          "count": 1,
+          "share": 0.125
+        },
+        "drifted_column_names": [
+          "mean_speed_mps"
+        ],
+        "columns": {
+          "queue_length_m": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          },
+          "vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          },
+          "halting_vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          },
+          "mean_speed_mps": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.25399559538619937,
+            "drift_detected": true
+          },
+          "phase_elapsed_s": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          },
+          "intersection_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          },
+          "signal_phase_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          },
+          "vehicle_composition": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          }
+        },
+        "model_quality": {
+          "rmse_m": 0.5408543625425863,
+          "mae_m": 0.05658718930276765,
+          "r2": 0.9021566310980673
+        },
+        "reference_rows": 54036,
+        "current_rows": 54036
+      },
+      "occupied_lanes": {
+        "drifted_columns": {
+          "count": 1,
+          "share": 0.125
+        },
+        "drifted_column_names": [
+          "mean_speed_mps"
+        ],
+        "columns": {
+          "queue_length_m": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          },
+          "vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          },
+          "halting_vehicle_count": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          },
+          "mean_speed_mps": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 1.4815469145160844,
+            "drift_detected": true
+          },
+          "phase_elapsed_s": {
+            "method": "Wasserstein distance (normed)",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          },
+          "intersection_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          },
+          "signal_phase_id": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          },
+          "vehicle_composition": {
+            "method": "Jensen-Shannon distance",
+            "threshold": 0.1,
+            "score": 0.0,
+            "drift_detected": false
+          }
+        },
+        "model_quality": {
+          "rmse_m": 2.3632264566591954,
+          "mae_m": 1.059087505357175,
+          "r2": 0.8735935766268239
+        },
+        "reference_rows": 2084,
+        "current_rows": 2084,
+        "html": "sensor_fault_kmh_occupied_lanes.html"
+      }
+    }
+  }
+}

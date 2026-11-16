@@ -34,8 +34,23 @@ jobs:
       - name: Compile project Python files
         run: python -m compileall -q src sumo flows scripts tests
 
-      - name: Run complete unit test suite
-        run: python -m unittest discover -s tests -v
+      - name: Run complete test suite with pytest
+        run: python -m pytest tests -v --junitxml=test-results/pytest.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-results
+          path: test-results/pytest.xml
+
+      - name: Evaluate retraining trigger on the committed drift report
+        run: |
+          code=0
+          python scripts/retraining_trigger.py --drift-report reports/phase3_drift/drift_report.json --request-file "$RUNNER_TEMP/retraining_request.json" || code=$?
+          cat "$RUNNER_TEMP/retraining_request.json"
+          # 0 = no retraining needed, 10 = retraining triggered; anything else is a real failure.
+          if [ "$code" != "0" ] && [ "$code" != "10" ]; then exit "$code"; fi
 
       - name: Validate Metaflow graph
         run: python flows/queue_model_flow.py --metadata=local --datastore=local check
@@ -45,6 +60,18 @@ jobs:
 
       - name: Build API container
         run: docker build --tag traffic-queue-api:ci .
+
+      - name: Smoke-test container observability endpoints
+        run: |
+          docker run -d --name api-smoke -p 8000:8000 traffic-queue-api:ci
+          for i in $(seq 1 30); do curl -sf http://localhost:8000/metrics > metrics.txt && break; sleep 2; done
+          # No model artifact is mounted in CI, so the API must report "not loaded" instead of serving.
+          grep -q '^queue_model_loaded 0' metrics.txt
+          curl -sf -o /dev/null http://localhost:8000/dashboard
+          curl -sf -o /dev/null http://localhost:8000/reports/evidently/surge_600_occupied_lanes
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/health)" = "503"
+          docker logs api-smoke 2>&1 | grep -q 'model_missing'
+          docker rm -f api-smoke
 
   deploy:
     needs: checks-and-image

@@ -21,6 +21,10 @@ The latest local verification record is [`reports/phase2_verification_20261111.m
 - **Drift:** demand surges (600/720 veh/h, unseen) and a synthetic km/h sensor fault were induced and detected. Surges raise MAE by +40 to +59 % → retraining recommended; the sensor fault raises PSI to 0.77 with stable MAE → investigate data pipeline. See [`reports/phase3_drift_versioning_report.md`](reports/phase3_drift_versioning_report.md).
 - **Versioning:** [`registry/model_versions.json`](registry/model_versions.json) lists every version by SHA-256. v2 (`8da60b0e…`, Metaflow run 3) passed the quality gate and promotion checks; v1 (`167b523f…`) stays in production until a human approves deployment.
 - **Governance:** [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md) and [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md).
+- **Evidently:** per-batch drift reports (`sumo/bengaluru_osm/evidently_drift_report.py`), served at `/reports/evidently/<batch>_occupied_lanes` and linked from the dashboard. They agree with the PSI detector.
+- **Logging and metrics:** the API logs every prediction (Python `logging`) and exposes Prometheus metrics at `/metrics`. `monitoring/docker-compose.yml` starts the API, Prometheus and a provisioned Grafana dashboard; `scripts/replay_production_traffic.py` replays simulated production traffic (normal → surge → sensor fault) with ground-truth feedback.
+- **Retraining trigger:** `scripts/retraining_trigger.py` turns a performance-drift alert into an automatic Metaflow run and writes the decision to `reports/phase3_drift/retraining_request.json`.
+- **Tests:** `python -m pytest tests` (60 tests). **Final report:** [`docs/FINAL_REPORT.md`](docs/FINAL_REPORT.md).
 
 ## Architecture and important files
 
@@ -43,8 +47,10 @@ Use Python 3.12. The pinned API dependencies are in `requirements-api.txt`; Phas
 
 ```bash
 python -m pip install -r requirements-phase2.txt -r requirements-test-phase1.txt
-python -m unittest discover -s tests -v
+python -m pytest tests -v
 ```
+
+Current suite (Phase 3, 2026-11-16): **60 tests pass** with PyTest in a clean environment built from these two requirement files.
 
 The latest suite run used WSL Ubuntu / Python 3.12.3 and the pinned Phase 2 dependencies plus the Phase 1 test extras: **34 tests passed, 0 failed, 0 errors**. The earlier clean-checkout run passed 32 tests before two Metaflow registry tests were added. Neither local run means GitHub Actions passed. See the [audit report](docs/phase2_audit_report.md) and [latest verification](reports/phase2_verification_20261111.md).
 

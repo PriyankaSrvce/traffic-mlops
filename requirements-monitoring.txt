@@ -1,0 +1,5 @@
+# Offline monitoring tools (Evidently reports). Separate from the serving image:
+# Evidently 0.7.23 does not import with pandas 3.x, so pandas is pinned here.
+evidently==0.7.23
+pandas==2.3.3
+numpy==2.2.6

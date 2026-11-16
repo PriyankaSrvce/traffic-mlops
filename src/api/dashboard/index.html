@@ -85,7 +85,7 @@ footer{color:var(--muted);font-size:12.5px;margin-top:20px}
 <p class="sub">60-second queue-length prediction on an OSM-derived Bengaluru corridor (SUMO digital twin). Live values come from this API; experiment values come from versioned reports in the repository.</p>
 <nav>
   <a href="#pipeline">Pipeline</a><a href="#drift">Drift monitoring</a><a href="#versions">Model versions</a>
-  <a href="#retrain">Retraining</a><a href="#cicd">CI/CD</a><a href="#predict">Live prediction</a><a href="#governance">Governance</a>
+  <a href="#retrain">Retraining</a><a href="#observability">Logging &amp; metrics</a><a href="#cicd">CI/CD</a><a href="#predict">Live prediction</a><a href="#governance">Governance</a>
 </nav>
 
 <section class="grid kpis" id="kpis"></section>
@@ -113,6 +113,9 @@ footer{color:var(--muted);font-size:12.5px;margin-top:20px}
     </div>
   </div>
   <div class="tscroll" style="margin-top:12px"><table id="drift-table"></table></div>
+  <h2 style="margin-top:20px;font-size:15px">Evidently reports (independent check)</h2>
+  <p class="note" id="ev-note"></p>
+  <div class="tscroll"><table id="ev-table"></table></div>
 </section>
 
 <section class="card" id="versions">
@@ -127,6 +130,14 @@ footer{color:var(--muted);font-size:12.5px;margin-top:20px}
   <div class="legend" id="retrain-legend"></div>
   <div id="retrain-chart" style="max-width:820px"></div>
   <div class="tscroll"><table id="retrain-table"></table></div>
+  <div class="loop" id="trigger-note"></div>
+</section>
+
+<section class="card" id="observability">
+  <h2>Logging, metrics and feedback</h2>
+  <p class="note">The API writes a log line for every prediction and exposes Prometheus metrics. A Grafana dashboard (run locally with <code>monitoring/docker-compose.yml</code>) charts them live.</p>
+  <div class="grid kpis" id="obs-kpis"></div>
+  <pre id="obs-sample" class="muted">Loading live metrics…</pre>
 </section>
 
 <section class="card" id="cicd">
@@ -220,6 +231,20 @@ function render(D,model){
     <td><span class="pill st-${lvl[b.data_drift_level]}"><span class="dot"></span>${b.data_drift_level}</span></td><td><span class="pill st-${lvl[b.performance_drift_level]}"><span class="dot"></span>${b.performance_drift_level}</span></td>
     <td><span class="pill st-${actionCls[b.action]}"><span class="dot"></span>${esc(b.action)}</span></td></tr>`).join("");
 
+  const E=D.evidently;
+  if(E){
+    $("#ev-note").innerHTML=`${esc(E.tool)}, default drift test per column. Reference: ${esc(E.reference)}. On all rows Evidently sees no drift for the surges; on occupied lanes it flags the same features as our PSI check. Evidently's dataset-level flag needs 50&nbsp;% of columns to drift (3 of 8 drifted under the surge), so our policy acts on column-level results. MAE here covers balanced-mix rows only, so the sensor-fault value differs slightly from the table above.`;
+    $("#ev-table").innerHTML=`<tr><th>Batch</th><th>Drifted columns (all rows)</th><th>Drifted columns (occupied lanes) and score</th><th class="num">MAE</th><th>Full report</th></tr>`+
+      E.batches.map(b=>`<tr><td><b>${esc(b.label)}</b></td><td>${b.all_rows_drifted.length?esc(b.all_rows_drifted.join(", ")):"none"}</td>
+      <td>${b.occupied_drifted.length?Object.entries(b.occupied_scores).map(([c,v])=>`<span class="mono">${esc(c)}</span> ${v}`).join(" · "):"none"}</td>
+      <td class="num">${f4(b.mae_m)}</td><td><a href="${esc(b.report)}" target="_blank" rel="noopener">Open Evidently report</a></td></tr>`).join("");
+  }
+  const T=D.retraining_trigger;
+  if(T){
+    $("#trigger-note").innerHTML=`<b>Automatic trigger:</b> decision <span class="mono">${esc(T.decision)}</span> for ${esc(T.performance_alert_batches.join(", ")||"no batch")}`+
+      (T.pipeline_investigation_batches.length?`; ${esc(T.pipeline_investigation_batches.join(", "))} sent to pipeline investigation instead (no retraining)`:"")+
+      (T.executed&&T.candidate?`. The trigger launched Metaflow and the run produced model <span class="mono">${esc(T.candidate.model_sha256.slice(0,8))}</span> (${esc(T.candidate.validation_status)} the quality gate).`:".");
+  }
   const stageCls={production:"ok",candidate:"warn",approved:"ok",archived:"",rejected:"alert",superseded:""};
   $("#timeline").innerHTML=D.versions.map(v=>`<li><span class="dot ${stageCls[v.stage]||""}" style="margin-top:6px"></span><div>
     <div class="ttl">${esc(v.name)}<span class="badge">${esc(v.stage)}</span>${model&&model.model_sha256===v.sha256?'<span class="badge">serving now</span>':""}</div>
@@ -241,6 +266,17 @@ function render(D,model){
   $("#footer").innerHTML=`Data snapshot ${esc(D.generated_utc)} · Limitations: ${esc(D.limitations)} · <a href="${esc(D.links.repo)}">Repository</a> · <a href="/docs">API docs</a>`;
 }
 
+async function observability(){
+  try{
+    const text=await (await fetch("/metrics")).text();
+    const val=n=>{const l=text.split("\n").find(x=>x.startsWith(n));return l?Number(l.split(" ").pop()):null;};
+    const k=[["Predictions served (this instance)",val("queue_predictions_total")],["Feedback records",val("queue_feedback_total")],
+             ["Predictions rejected by output checks",val("queue_prediction_failures_total")],["Model loaded",val("queue_model_loaded")===1?"yes":"no"]];
+    $("#obs-kpis").innerHTML=k.map(([l,v])=>`<div class="card kpi" style="margin:0"><div class="l">${esc(l)}</div><div class="v">${esc(v??"–")}</div></div>`).join("");
+    $("#obs-sample").className="";
+    $("#obs-sample").textContent="Sample of GET /metrics (Prometheus format):\n"+text.split("\n").filter(l=>/^queue_(model_info|predictions_total|feedback_total|drift_worst_psi|api_requests_total)/.test(l)).slice(0,12).join("\n");
+  }catch(e){$("#obs-sample").textContent="Metrics endpoint not reachable: "+e.message;}}
+
 async function ci(repo){
   const t=$("#ci-table");
   try{const d=await getJSON(`https://api.github.com/repos/${repo}/actions/runs?per_page=8`);
@@ -258,7 +294,7 @@ $("#predict-btn").onclick=async()=>{const o=$("#predict-out");o.className="";o.t
 
 (async()=>{
   const [D,model]=await Promise.all([getJSON("/api/v1/dashboard-data"),liveStatus()]);
-  SAMPLE=D.sample_request;render(D,model);ci(D.links.repo_slug);
+  SAMPLE=D.sample_request;render(D,model);ci(D.links.repo_slug);observability();
 })().catch(e=>{document.querySelector(".sub").textContent="Dashboard data failed to load: "+e.message;});
 </script>
 </body>
