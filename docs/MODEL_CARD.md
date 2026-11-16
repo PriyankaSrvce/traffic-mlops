@@ -60,9 +60,14 @@ Quality gate (Metaflow `acceptance` step): on both validation and test, MAE must
 
 ## Monitoring
 
-Batch drift checks (`sumo/bengaluru_osm/drift_detection.py`): PSI on all rows and on occupied
-lanes, MAE versus the approved test MAE, the persistence margin, and unseen categories. Policy
-and Phase 3 results: `docs/GOVERNANCE.md` §5 and the `/dashboard` page.
+- Batch drift checks (`sumo/bengaluru_osm/drift_detection.py`): PSI on all rows and on occupied
+  lanes, MAE versus the approved test MAE, the persistence margin, and unseen categories.
+- Evidently reports per batch (`evidently_drift_report.py`) as an independent check.
+- Live: Python logging of every prediction, Prometheus metrics at `/metrics`, a Grafana
+  dashboard, and a feedback endpoint for ground truth.
+- A performance alert starts retraining automatically (`scripts/retraining_trigger.py`).
+
+Policy and Phase 3 results: `docs/GOVERNANCE.md` §5 and the `/dashboard` page.
 
 ## Ethical and safety considerations
 

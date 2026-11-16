@@ -7,3 +7,4 @@ metaflow==2.19.41
 fastapi==0.159.1
 uvicorn==0.54.0
 pydantic==2.14.1
+prometheus-client==0.26.0

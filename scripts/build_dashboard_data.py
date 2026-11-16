@@ -7,6 +7,8 @@ Inputs (defaults):
   reports/phase3_drift/drift_report.json          drift detection output
   registry/model_versions.json                    model version registry
   reports/phase3_drift/promotion_comparison.json  v1 vs v2 comparison (optional)
+  reports/phase3_drift/evidently_summary.json     Evidently drift scores (optional)
+  reports/phase3_drift/retraining_request.json    retraining trigger decision (optional)
 """
 from __future__ import annotations
 
@@ -20,6 +22,7 @@ REPO = "PriyankaSrvce/traffic-mlops"
 
 BATCH_TEXT = {
     "normal_test": ("Normal (held-out)", "Held-out test runs, same demand range as training"),
+    "normal_validation": ("Normal (balanced mix)", "Held-out run with the same balanced vehicle mix as the surge runs (matched control)"),
     "surge_600": ("Surge 600 veh/h", "Unseen rush-hour demand, 11 % above training maximum"),
     "surge_720": ("Surge 720 veh/h", "Unseen severe demand surge"),
     "sensor_fault_kmh": ("Sensor fault", "Synthetic: speed sensor reports km/h instead of m/s"),
@@ -46,10 +49,12 @@ PIPELINE = [
      "detail": "Tests, Metaflow graph checks, Docker build on every push/PR"},
     {"stage": "Deployment", "tool": "Docker → Render", "status": "manual gate",
      "detail": "Manual approval; container verifies model hash before serving"},
-    {"stage": "Serving", "tool": "FastAPI", "status": "verified",
-     "detail": "/predict, /model-info, /health, this dashboard"},
-    {"stage": "Monitoring", "tool": "PSI + error tracking", "status": "verified",
-     "detail": "Data drift, performance drift, schema checks per batch"},
+    {"stage": "Serving", "tool": "FastAPI + Python logging", "status": "verified",
+     "detail": "/predict, /feedback, /model-info, /health; every prediction is logged"},
+    {"stage": "Monitoring", "tool": "Evidently, Prometheus, Grafana", "status": "verified",
+     "detail": "Evidently + PSI drift reports per batch; live /metrics charted in Grafana"},
+    {"stage": "Retraining trigger", "tool": "retraining_trigger.py", "status": "verified",
+     "detail": "Performance alert starts the Metaflow flow automatically"},
 ]
 LOOP = ("Feedback loop: a performance-drift alert triggers retraining on refreshed SUMO data through the same "
         "Metaflow flow and quality gate. The new version is compared with production before a human approves deployment.")
@@ -65,8 +70,12 @@ GOVERNANCE = [
      "evidence": "scripts/model_promotion.py, deploy job", "why": "Fixing drift must not break normal conditions; separation of duties"},
     {"area": "Data lineage", "control": "DVC + dataset SHA-256; split by whole simulation seed",
      "evidence": "*.dvc, dataset_sha256", "why": "Exact data behind every result; no leakage between train and test"},
-    {"area": "Monitoring", "control": "PSI (all rows + occupied lanes), MAE vs approved, schema checks",
-     "evidence": "reports/phase3_drift/drift_report.json", "why": "Detects decay before it causes harm; 97 % zero rows hide drift otherwise"},
+    {"area": "Monitoring", "control": "Evidently + PSI (all rows + occupied lanes), MAE vs approved, schema checks",
+     "evidence": "reports/phase3_drift/drift_report.json, evidently_summary.json", "why": "Detects decay before it causes harm; 97 % zero rows hide drift otherwise"},
+    {"area": "Observability", "control": "Python logging of every prediction; Prometheus /metrics; Grafana dashboard",
+     "evidence": "src/api/app.py, monitoring/", "why": "Failures and unusual inputs are visible while they happen, with an audit trail"},
+    {"area": "Feedback loop", "control": "Ground-truth feedback endpoint; automatic retraining trigger with a written decision",
+     "evidence": "scripts/retraining_trigger.py, retraining_request.json", "why": "Retraining starts for a recorded reason, not by someone's guess"},
     {"area": "Response policy", "control": "Performance alert → retrain; data-only alert → investigate pipeline",
      "evidence": "drift_detection.py", "why": "Retraining on a faulty sensor feed would bake the fault into the model"},
     {"area": "Change control", "control": "PR review, CI tests, manual deploy job, auto-deploy off",
@@ -88,6 +97,8 @@ def main() -> None:
     ap.add_argument("--drift-report", type=Path, default=ROOT / "reports/phase3_drift/drift_report.json")
     ap.add_argument("--registry", type=Path, default=ROOT / "registry/model_versions.json")
     ap.add_argument("--comparison", type=Path, default=ROOT / "reports/phase3_drift/promotion_comparison.json")
+    ap.add_argument("--evidently", type=Path, default=ROOT / "reports/phase3_drift/evidently_summary.json")
+    ap.add_argument("--trigger", type=Path, default=ROOT / "reports/phase3_drift/retraining_request.json")
     ap.add_argument("--tests", type=int, required=True, help="number of unit tests in the last verified run")
     ap.add_argument("--output", type=Path, default=ROOT / "src/api/dashboard/dashboard_data.json")
     a = ap.parse_args()
@@ -116,6 +127,18 @@ def main() -> None:
                       "persistence": r["persistence_mae_m"]} for k, r in cmp["evaluation"].items()],
             "checks": cmp["checks"], "decision": cmp["decision"]}
 
+    evidently = None
+    if a.evidently.exists():
+        ev = json.loads(a.evidently.read_text(encoding="utf-8"))
+        evidently = {"tool": ev["tool"], "reference": ev["reference"], "batches": [
+            {"batch": name, "label": BATCH_TEXT.get(name, (name, ""))[0],
+             "all_rows_drifted": b["all_rows"]["drifted_column_names"],
+             "occupied_drifted": b["occupied_lanes"]["drifted_column_names"],
+             "occupied_scores": {c: round(v["score"], 3) for c, v in b["occupied_lanes"]["columns"].items() if v["drift_detected"]},
+             "mae_m": b["all_rows"]["model_quality"]["mae_m"],
+             "report": f"/reports/evidently/{name}_occupied_lanes"} for name, b in ev["batches"].items()]}
+    trigger = json.loads(a.trigger.read_text(encoding="utf-8")) if a.trigger.exists() else None
+
     data = {
         "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "performance": {"test_mae": prod["test_mae"], "persistence_test_mae": prod["persistence_test_mae"],
@@ -125,6 +148,7 @@ def main() -> None:
         "pipeline": PIPELINE, "pipeline_loop": LOOP,
         "drift": {"policy": drift["policy"], "approved_test_mae_m": drift["approved_test_mae_m"],
                   "model_sha256": drift["model_sha256"], "generated_utc": drift["generated_utc"], "batches": batches},
+        "evidently": evidently, "retraining_trigger": trigger,
         "versions": registry["versions"], "retraining": retraining, "governance": GOVERNANCE,
         "sample_request": SAMPLE_REQUEST,
         "links": {"repo": f"https://github.com/{REPO}", "repo_slug": REPO,

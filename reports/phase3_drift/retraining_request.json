@@ -1,0 +1,41 @@
+{
+  "retrain": true,
+  "decision": "TRIGGER_RETRAINING",
+  "performance_alert_batches": [
+    "surge_600",
+    "surge_720"
+  ],
+  "pipeline_investigation_batches": [
+    "sensor_fault_kmh"
+  ],
+  "reasons": [
+    "DATA DRIFT WATCH: 'queue_length_m [occupied lanes]' PSI=0.123 (watch >= 0.1, alert >= 0.25)",
+    "PERFORMANCE DRIFT ALERT: MAE 0.0877 m is +59% vs approved 0.0550 m; beats persistence by 5 %: True",
+    "DATA DRIFT WATCH: 'queue_length_m [occupied lanes]' PSI=0.168 (watch >= 0.1, alert >= 0.25)",
+    "PERFORMANCE DRIFT ALERT: MAE 0.0769 m is +40% vs approved 0.0550 m; beats persistence by 5 %: True"
+  ],
+  "production_model_sha256": "167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b",
+  "drift_report_generated_utc": "2026-11-16T18:01:02+00:00",
+  "evaluated_utc": "2026-11-16T18:16:11+00:00",
+  "drift_report": "drift_report.json",
+  "executed": true,
+  "dataset": {
+    "file": "training_labels_v2.csv",
+    "sha256": "177130ea8b0622fd0575d9b2cb3a4c899a522a6e4fb3f02242defefb82fd93c4"
+  },
+  "metaflow_exit_code": 0,
+  "next_step": "scripts/model_promotion.py compare (promotion checks P1-P3), then human approval",
+  "candidate": {
+    "model_version": "bengaluru_queue_hurdle_v1_2026-11_metaflow_5",
+    "model_sha256": "8da60b0e70a0e38c3e4c5d82eefd47fd170949997e62b9bbf3f573ebb03c0804",
+    "validation_status": "passed",
+    "acceptance_gate": {
+      "validation_mae_improves_5pct": true,
+      "test_mae_improves_5pct": true,
+      "validation_rmse_not_worse": true,
+      "test_rmse_not_worse": true
+    },
+    "test_mae_m": 0.055763181433009394,
+    "run_folder": "20261116T181624Z-5"
+  }
+}

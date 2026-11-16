@@ -83,6 +83,25 @@ JSON reports above.
 - Dashboard checked locally (desktop and phone width): every section renders, the live prediction returns 5.1657 m with SHA `167b…`, and GitHub runs load.
 - Metaflow UI shows run 3 with all artifacts beside run 2.
 
+## 6a. Addendum, 2026-11-16: tools named in the course circular
+
+Added after checking the project against the course circular. Earlier sections are unchanged.
+
+| Item | What was added | Evidence |
+|---|---|---|
+| Matched control batch | `normal_validation` (balanced vehicle mix, like the surge runs): worst PSI 0.053, MAE 0.0513, no action | `reports/phase3_drift/drift_report.json` |
+| Evidently | DataDriftPreset + RegressionPreset per batch, on all rows and on occupied lanes. No drift on normal data; queue, vehicle-count and halting-count drift on occupied lanes under both surges (scores 0.13–0.22, threshold 0.1); speed drift under the sensor fault (1.48). On all rows the surges show no drift, as with PSI | `evidently_drift_report.py`, `reports/phase3_drift/evidently_summary.json`, `/reports/evidently/…` |
+| Python logging | Structured log line per prediction, feedback record, model load/rejection and failed prediction | `src/api/app.py` |
+| Prometheus / Grafana | `/metrics` endpoint; local stack with a provisioned Grafana dashboard | `monitoring/` |
+| Simulated production traffic | Replay of normal → surge → sensor-fault rows with ground-truth feedback: 1,800 requests, 0 failures; live MAE 0.83 m → 1.34 m → 1.17 m; persistence 1.33 m → 1.66 m → 1.69 m (600 occupied-lane rows per phase) | `scripts/replay_production_traffic.py` |
+| Retraining trigger | Decision `TRIGGER_RETRAINING` for surge_600 and surge_720; sensor fault routed to pipeline investigation. The trigger launched Metaflow (runs 4 and 5), which reproduced model `8da60b0e…` | `scripts/retraining_trigger.py`, `reports/phase3_drift/retraining_request.json` |
+| PyTest | Suite runs with PyTest in CI: 60 tests pass | `pytest.ini`, CI workflow |
+| DVC | Pointer files for the v1 and v2 training data and the three drift batches | `data/sumo/` |
+
+Two cautions recorded honestly:
+- Evidently's first run flagged `vehicle_composition` on normal data, because the reference was about half motorcycle-heavy and the batches all balanced. Reference and batches are now compared on the same vehicle mix.
+- Evidently's dataset-level flag (50 % of columns) stays off under the surge: 3 of 8 columns drift. The policy acts on column-level results.
+
 ## 7. Limitations
 
 - Drift batches are simulated scenarios and one synthetic fault, not live traffic.

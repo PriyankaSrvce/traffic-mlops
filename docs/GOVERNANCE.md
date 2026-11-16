@@ -128,16 +128,58 @@ Phase 3 results (`reports/phase3_drift/drift_report.json`):
 | Batch | Worst PSI | MAE | Action |
 |---|---|---|---|
 | Normal held-out test | 0.014 | 0.0550 | No action |
+| Normal, balanced vehicle mix (matched control) | 0.053 | 0.0513 | No action |
 | Demand surge 600 veh/h (unseen) | 0.123 | 0.0877 (+59 %) | Retraining recommended |
 | Demand surge 720 veh/h (unseen) | 0.168 | 0.0769 (+40 %) | Retraining recommended |
 | Synthetic sensor fault (km/h) | 0.765 | 0.0556 (+1 %) | Investigate data pipeline |
+
+### 5.1 Monitoring tools and what each one is for
+
+| Tool | Role | Evidence |
+|---|---|---|
+| **Evidently** | Independent, standard drift report per batch (DataDriftPreset + RegressionPreset). Confirms our PSI check with a different statistical test (Wasserstein distance) | `sumo/bengaluru_osm/evidently_drift_report.py`, `reports/phase3_drift/evidently_summary.json`, HTML reports under `/reports/evidently/…` |
+| **PSI detector** | The policy engine: turns scores into OK / WATCH / ALERT and an action | `sumo/bengaluru_osm/drift_detection.py`, `drift_report.json` |
+| **Python logging** | One structured line per prediction, feedback record, rejected model and failed prediction | `src/api/app.py` (logger `queue_api`), `QUEUE_API_LOG_FILE` for a rotating file |
+| **Prometheus** | Scrapes `/metrics`: request counts, latency, input and prediction distributions, feedback error, model identity, last drift report | `monitoring/prometheus.yml` |
+| **Grafana** | Live dashboard on those metrics | `monitoring/grafana/dashboards/traffic_mlops.json` |
+
+**Why two drift tools?** Evidently is the recognised standard and gives a full visual report.
+Our PSI detector carries the *policy* (thresholds, segments and actions) and runs inside the
+pinned serving environment. Both were run on the same batches and agree: no drift on normal
+data, drift in queue and vehicle-count features on occupied lanes under the surge, and drift in
+speed under the sensor fault.
+
+**Like-for-like rule.** A first Evidently run reported drift in `vehicle_composition` even on
+normal data. The reference set was about half motorcycle-heavy runs, while the new batches all
+use the balanced mix. That is a difference in experiment design, not traffic drift. Reference
+and batches are therefore compared on the same vehicle mix, and a matched "normal, balanced mix"
+control batch was added. The control shows no drift in either tool.
+
+**Evidently's dataset-level flag.** Evidently reports "dataset drift" only when at least 50 % of
+columns drift. Under the surge, 3 of 8 columns drift (37.5 %), so the dataset-level flag stays
+off while the column-level results show the drift. Our policy acts on column-level results,
+because three identifier columns cannot change when only demand changes.
+
+### 5.2 Feedback and the retraining trigger
+
+- `POST /api/v1/feedback` records the queue that was actually observed for an earlier
+  prediction. Prometheus then exposes the live error of the model and of the persistence baseline.
+- `scripts/retraining_trigger.py` reads the drift report and applies the policy above. A
+  performance alert starts the Metaflow training flow automatically. A data-only alert never
+  does. Every decision is written to `retraining_request.json` with its reasons.
+- The trigger starts *training* only. Promotion still needs the quality gate, the promotion
+  comparison and human approval (§4.4). **Justification:** automatic retraining is safe because
+  an automatically trained model cannot reach users without passing those gates.
+- Known limit: the feedback endpoint has no authentication. In this project it is used only by
+  the replay script. A real deployment must authenticate feedback, or false records could
+  distort the live error metrics.
 
 ## 6. Change management and CI/CD controls
 
 | Control | Enforcement | Justification |
 |---|---|---|
 | All changes through pull requests with review | GitHub branch workflow | A second person catches errors and unsupported claims |
-| Automated tests on every push/PR | `phase2-ci.yml` job `checks-and-image`: compile, unit tests, Metaflow graph checks, Docker build | Broken code cannot reach `main` unnoticed |
+| Automated tests on every push/PR | `phase2-ci.yml` job `checks-and-image`: compile, PyTest suite, retraining-trigger check, Metaflow graph checks, Docker build, container smoke test | Broken code cannot reach `main` unnoticed |
 | Deployment is a separate, manually triggered job | `deploy` job runs only on manual dispatch after checks pass; Render `autoDeployTrigger: off` | A merge alone never changes what users see |
 | Pinned dependencies | `requirements-*.txt` with exact versions | The same code gives the same model (reproducibility) |
 | Least-privilege container | Runs as non-root `apiuser` (UID 10001), model mounted read-only, health check | Limits damage if the service is compromised |
@@ -158,7 +200,9 @@ Phase 3 results (`reports/phase3_drift/drift_report.json`):
 | Where did it come from? | `registry/model_versions.json` → Metaflow run → `dataset_sha256` |
 | Did it pass the gates? | Metaflow `acceptance` step artifacts (`registry_status`, metrics) |
 | Was the code tested? | GitHub Actions run history |
-| Is it still healthy? | `reports/phase3_drift/drift_report.json`, the `/dashboard` drift section |
+| Is it still healthy? | `reports/phase3_drift/drift_report.json`, Evidently reports, the `/dashboard` drift section, Grafana |
+| What did it predict, and when? | API logs (`prediction lane_id=… predicted_m=… model_sha256=…`) |
+| Why was retraining started? | `reports/phase3_drift/retraining_request.json` |
 | Why was a version rejected or replaced? | `reason` field of each registry entry |
 
 ## 9. Review cadence

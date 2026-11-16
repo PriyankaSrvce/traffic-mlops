@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-11-15T07:16:08+00:00",
+  "generated_utc": "2026-11-16T18:17:53+00:00",
   "performance": {
     "test_mae": 0.05500322448431176,
     "persistence_test_mae": 0.06935,
@@ -8,7 +8,7 @@
     "runs": 18
   },
   "quality": {
-    "tests": 44
+    "tests": 60
   },
   "pipeline": [
     {
@@ -55,15 +55,21 @@
     },
     {
       "stage": "Serving",
-      "tool": "FastAPI",
+      "tool": "FastAPI + Python logging",
       "status": "verified",
-      "detail": "/predict, /model-info, /health, this dashboard"
+      "detail": "/predict, /feedback, /model-info, /health; every prediction is logged"
     },
     {
       "stage": "Monitoring",
-      "tool": "PSI + error tracking",
+      "tool": "Evidently, Prometheus, Grafana",
       "status": "verified",
-      "detail": "Data drift, performance drift, schema checks per batch"
+      "detail": "Evidently + PSI drift reports per batch; live /metrics charted in Grafana"
+    },
+    {
+      "stage": "Retraining trigger",
+      "tool": "retraining_trigger.py",
+      "status": "verified",
+      "detail": "Performance alert starts the Metaflow flow automatically"
     }
   ],
   "pipeline_loop": "Feedback loop: a performance-drift alert triggers retraining on refreshed SUMO data through the same Metaflow flow and quality gate. The new version is compared with production before a human approves deployment.",
@@ -77,7 +83,7 @@
     },
     "approved_test_mae_m": 0.05500322448431176,
     "model_sha256": "167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b",
-    "generated_utc": "2026-11-15T07:13:32+00:00",
+    "generated_utc": "2026-11-16T18:01:02+00:00",
     "batches": [
       {
         "batch": "normal_test",
@@ -89,6 +95,21 @@
         "model_mae": 0.05500322448431176,
         "persistence_mae": 0.06935305234631294,
         "mae_change_vs_approved": 0.0,
+        "data_drift_level": "OK",
+        "performance_drift_level": "OK",
+        "action": "NO ACTION",
+        "alerts": []
+      },
+      {
+        "batch": "normal_validation",
+        "label": "Normal (balanced mix)",
+        "description": "Held-out run with the same balanced vehicle mix as the surge runs (matched control)",
+        "rows": 59052,
+        "worst_feature": "queue_length_m_t_plus_60s [occupied lanes]",
+        "worst_psi": 0.05349107019985934,
+        "model_mae": 0.051290759793830486,
+        "persistence_mae": 0.0755126159994581,
+        "mae_change_vs_approved": -0.06749540095672313,
         "data_drift_level": "OK",
         "performance_drift_level": "OK",
         "action": "NO ACTION",
@@ -148,6 +169,111 @@
         ]
       }
     ]
+  },
+  "evidently": {
+    "tool": "evidently 0.7.23",
+    "reference": "approved held-out test set, balanced vehicle mix (seed 123)",
+    "batches": [
+      {
+        "batch": "normal_validation",
+        "label": "Normal (balanced mix)",
+        "all_rows_drifted": [],
+        "occupied_drifted": [],
+        "occupied_scores": {},
+        "mae_m": 0.051290759793830486,
+        "report": "/reports/evidently/normal_validation_occupied_lanes"
+      },
+      {
+        "batch": "surge_600",
+        "label": "Surge 600 veh/h",
+        "all_rows_drifted": [],
+        "occupied_drifted": [
+          "halting_vehicle_count",
+          "queue_length_m",
+          "vehicle_count"
+        ],
+        "occupied_scores": {
+          "queue_length_m": 0.15,
+          "vehicle_count": 0.172,
+          "halting_vehicle_count": 0.129
+        },
+        "mae_m": 0.08768831060561022,
+        "report": "/reports/evidently/surge_600_occupied_lanes"
+      },
+      {
+        "batch": "surge_720",
+        "label": "Surge 720 veh/h",
+        "all_rows_drifted": [],
+        "occupied_drifted": [
+          "halting_vehicle_count",
+          "queue_length_m",
+          "vehicle_count"
+        ],
+        "occupied_scores": {
+          "queue_length_m": 0.224,
+          "vehicle_count": 0.209,
+          "halting_vehicle_count": 0.158
+        },
+        "mae_m": 0.07687406130945555,
+        "report": "/reports/evidently/surge_720_occupied_lanes"
+      },
+      {
+        "batch": "sensor_fault_kmh",
+        "label": "Sensor fault",
+        "all_rows_drifted": [
+          "mean_speed_mps"
+        ],
+        "occupied_drifted": [
+          "mean_speed_mps"
+        ],
+        "occupied_scores": {
+          "mean_speed_mps": 1.482
+        },
+        "mae_m": 0.05658718930276765,
+        "report": "/reports/evidently/sensor_fault_kmh_occupied_lanes"
+      }
+    ]
+  },
+  "retraining_trigger": {
+    "retrain": true,
+    "decision": "TRIGGER_RETRAINING",
+    "performance_alert_batches": [
+      "surge_600",
+      "surge_720"
+    ],
+    "pipeline_investigation_batches": [
+      "sensor_fault_kmh"
+    ],
+    "reasons": [
+      "DATA DRIFT WATCH: 'queue_length_m [occupied lanes]' PSI=0.123 (watch >= 0.1, alert >= 0.25)",
+      "PERFORMANCE DRIFT ALERT: MAE 0.0877 m is +59% vs approved 0.0550 m; beats persistence by 5 %: True",
+      "DATA DRIFT WATCH: 'queue_length_m [occupied lanes]' PSI=0.168 (watch >= 0.1, alert >= 0.25)",
+      "PERFORMANCE DRIFT ALERT: MAE 0.0769 m is +40% vs approved 0.0550 m; beats persistence by 5 %: True"
+    ],
+    "production_model_sha256": "167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b",
+    "drift_report_generated_utc": "2026-11-16T18:01:02+00:00",
+    "evaluated_utc": "2026-11-16T18:16:11+00:00",
+    "drift_report": "drift_report.json",
+    "executed": true,
+    "dataset": {
+      "file": "training_labels_v2.csv",
+      "sha256": "177130ea8b0622fd0575d9b2cb3a4c899a522a6e4fb3f02242defefb82fd93c4"
+    },
+    "metaflow_exit_code": 0,
+    "next_step": "scripts/model_promotion.py compare (promotion checks P1-P3), then human approval",
+    "candidate": {
+      "model_version": "bengaluru_queue_hurdle_v1_2026-11_metaflow_5",
+      "model_sha256": "8da60b0e70a0e38c3e4c5d82eefd47fd170949997e62b9bbf3f573ebb03c0804",
+      "validation_status": "passed",
+      "acceptance_gate": {
+        "validation_mae_improves_5pct": true,
+        "test_mae_improves_5pct": true,
+        "validation_rmse_not_worse": true,
+        "test_rmse_not_worse": true
+      },
+      "test_mae_m": 0.055763181433009394,
+      "run_folder": "20261116T181624Z-5"
+    }
   },
   "versions": [
     {
@@ -299,9 +425,21 @@
     },
     {
       "area": "Monitoring",
-      "control": "PSI (all rows + occupied lanes), MAE vs approved, schema checks",
-      "evidence": "reports/phase3_drift/drift_report.json",
+      "control": "Evidently + PSI (all rows + occupied lanes), MAE vs approved, schema checks",
+      "evidence": "reports/phase3_drift/drift_report.json, evidently_summary.json",
       "why": "Detects decay before it causes harm; 97 % zero rows hide drift otherwise"
+    },
+    {
+      "area": "Observability",
+      "control": "Python logging of every prediction; Prometheus /metrics; Grafana dashboard",
+      "evidence": "src/api/app.py, monitoring/",
+      "why": "Failures and unusual inputs are visible while they happen, with an audit trail"
+    },
+    {
+      "area": "Feedback loop",
+      "control": "Ground-truth feedback endpoint; automatic retraining trigger with a written decision",
+      "evidence": "scripts/retraining_trigger.py, retraining_request.json",
+      "why": "Retraining starts for a recorded reason, not by someone's guess"
     },
     {
       "area": "Response policy",

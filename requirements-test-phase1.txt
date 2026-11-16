@@ -1,3 +1,5 @@
 # Minimal Phase 1-only imports required by the full unittest suite.
 holidays==0.105
 xgboost==3.2.0
+pytest==9.2.0
+httpx==0.28.1
