@@ -1,8 +1,8 @@
 {
-  "model_version": "bengaluru_queue_hurdle_v1_2026-11_metaflow_1794405200312669",
-  "sha256": "167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b",
-  "metaflow_run": "BengaluruQueueModelFlow/1794405200312669",
-  "dataset_sha256": "4e8213df71d3ed2df8bb2995ec195e1610f4398ad37f0e049a4399d9f93a5ffb",
+  "model_version": "bengaluru_queue_hurdle_v1_2026-11_metaflow_3",
+  "sha256": "8da60b0e70a0e38c3e4c5d82eefd47fd170949997e62b9bbf3f573ebb03c0804",
+  "metaflow_run": "BengaluruQueueModelFlow/3",
+  "dataset_sha256": "177130ea8b0622fd0575d9b2cb3a4c899a522a6e4fb3f02242defefb82fd93c4",
   "target": "queue_length_m_t_plus_60s",
   "horizon_seconds": 60,
   "features": [
