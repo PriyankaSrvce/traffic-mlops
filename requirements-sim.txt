@@ -1,0 +1,5 @@
+# Simulation and Metaflow-UI extras for the team's WSL environment (pinned to the verified setup).
+eclipse-sumo==1.28.0
+sumolib==1.28.0
+traci==1.28.0
+boto3==1.44.1

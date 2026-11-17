@@ -1,0 +1,92 @@
+# Local Metaflow UI for the team: Netflix metaflow-service (metadata + UI) with Postgres and a local
+# S3-compatible store (SeaweedFS), so the UI can show artifact values.
+#
+# One-time: team/windows/SETUP_METAFLOW_UI.cmd clones metaflow-service into ../../.metaflow-service
+# at a pinned commit and applies ui-artifact-size.patch (artifact sizes that the UI could not read).
+#   docker compose -f team/metaflow-ui/docker-compose.yml up -d --build
+# UI: http://localhost:8083   Metadata API: http://localhost:8080   S3: http://localhost:9000
+# Every port is bound to 127.0.0.1. The S3 store runs without authentication (local demo only);
+# the AWS_* values below are placeholders required by the client library, not secrets.
+name: traffic-metaflow
+services:
+  db:
+    image: "postgres:11"
+    command: ["postgres", "-c", "log_statement=none", "-c", "wal_level=logical"]
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - mf_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  migration:
+    build: { context: ../../.metaflow-service, dockerfile: Dockerfile.migration_service }
+    command: ["python", "/root/run_goose.py"]
+    environment:
+      - MF_METADATA_DB_HOST=db
+      - MF_METADATA_DB_PORT=5432
+      - MF_METADATA_DB_USER=postgres
+      - MF_METADATA_DB_PSWD=postgres
+      - MF_METADATA_DB_NAME=postgres
+      - MF_MIGRATION_ENDPOINTS_ENABLED=1
+      - MF_MIGRATION_PORT=8082
+    depends_on:
+      db: { condition: service_healthy }
+  metadata:
+    build: { context: ../../.metaflow-service, dockerfile: Dockerfile.metadata_service }
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      - LOGLEVEL=WARNING
+      - MF_METADATA_DB_HOST=db
+      - MF_METADATA_DB_PORT=5432
+      - MF_METADATA_DB_USER=postgres
+      - MF_METADATA_DB_PSWD=postgres
+      - MF_METADATA_DB_NAME=postgres
+      - MF_METADATA_PORT=8080
+      - MF_METADATA_HOST=0.0.0.0
+      - MF_MIGRATION_PORT=8082
+    depends_on:
+      - migration
+  ui_backend:
+    build: { context: ../../.metaflow-service, dockerfile: Dockerfile.ui_service, args: { UI_ENABLED: "1" } }
+    ports:
+      - "127.0.0.1:8083:8083"
+    environment:
+      - MF_METADATA_DB_HOST=db
+      - MF_METADATA_DB_PORT=5432
+      - MF_METADATA_DB_USER=postgres
+      - MF_METADATA_DB_PSWD=postgres
+      - MF_METADATA_DB_NAME=postgres
+      - MF_UI_METADATA_PORT=8083
+      - MF_UI_METADATA_HOST=0.0.0.0
+      - UI_ENABLED=1
+      - METAFLOW_DATASTORE_SYSROOT_S3=s3://metaflow/data
+      - METAFLOW_S3_ENDPOINT_URL=http://s3:9000
+      - AWS_ACCESS_KEY_ID=local-demo
+      - AWS_SECRET_ACCESS_KEY=local-demo-not-a-secret
+      - AWS_DEFAULT_REGION=us-east-1
+      - FEATURE_S3_DISABLE=0
+      - FEATURE_ARTIFACT_TABLE=1
+      - FEATURE_ARTIFACT_SEARCH=1
+      - PREFETCH_RUNS_SINCE=2592000
+      - PREFETCH_RUNS_LIMIT=5
+      - LOGLEVEL=INFO
+      - GA_TRACKING_ID=none
+    depends_on:
+      - migration
+      - s3
+  s3:
+    image: "chrislusf/seaweedfs:4.53"
+    command: ["server", "-dir=/data", "-s3", "-s3.port=9000", "-ip.bind=0.0.0.0"]
+    ports:
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - mf_s3:/data
+volumes:
+  mf_db:
+  mf_s3:

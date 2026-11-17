@@ -35,3 +35,11 @@ sumo/bengaluru_osm/runs/
 sumo/bengaluru_osm/datasets/
 sumo/bengaluru_osm/*.osm
 sumo/bengaluru_osm/*.net.xml
+
+# Team setup: local outputs, generated data splits, downloaded tools and models
+outputs/
+.metaflow/
+.metaflow-service/
+data/sumo/splits/
+data/sumo/splits_v2/
+models/

@@ -58,6 +58,12 @@ jobs:
       - name: Validate Bengaluru Metaflow graph
         run: python flows/bengaluru_queue_model_flow.py --metadata=local --datastore=local check
 
+      - name: Validate results-card Metaflow graph
+        run: python flows/phase2_results_flow.py --metadata=local --datastore=local check
+
+      - name: Syntax-check team scripts
+        run: for f in team/wsl/*.sh; do bash -n "$f"; done
+
       - name: Build API container
         run: docker build --tag traffic-queue-api:ci .
 

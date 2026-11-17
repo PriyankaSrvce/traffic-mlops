@@ -1,0 +1,3 @@
+# Data versioning (separate environment). gdrive extra = Google Drive remote used by the team.
+dvc[gdrive]==3.67.1
+dvc-gdrive==3.0.1

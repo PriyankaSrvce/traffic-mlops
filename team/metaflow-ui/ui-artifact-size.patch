@@ -1,0 +1,38 @@
+diff --git a/services/ui_backend_service/data/cache/utils.py b/services/ui_backend_service/data/cache/utils.py
+index ef443fa..f7e15d7 100644
+--- a/services/ui_backend_service/data/cache/utils.py
++++ b/services/ui_backend_service/data/cache/utils.py
+@@ -68,13 +68,31 @@ def artifact_value(artifact: DataArtifact) -> Tuple[bool, object]:
+     tuple : (bool, object)
+         (success, artifact.data)
+     """
+-    if artifact.size < MAX_S3_SIZE:
++    # Local demo patch: artifact.size can raise TypeError when the cached task
++    # datastore info is missing; fall back to measuring the pickled value.
++    try:
++        size = artifact.size
++    except Exception:
++        import pickle
++        data = artifact.data
++        try:
++            size = len(pickle.dumps(data))
++        except Exception:
++            size = MAX_S3_SIZE
++        if size < MAX_S3_SIZE:
++            return (True, data)
++        return (
++            False,
++            "artifact-too-large",
++            "{}: {} bytes".format(artifact.pathspec, size),
++        )
++    if size < MAX_S3_SIZE:
+         return (True, artifact.data)
+     else:
+         return (
+             False,
+             "artifact-too-large",
+-            "{}: {} bytes".format(artifact.pathspec, artifact.size),
++            "{}: {} bytes".format(artifact.pathspec, size),
+         )
+ 
+ 

@@ -1,0 +1,10 @@
+# Shell scripts must keep Linux line endings even in a Windows checkout (bash in WSL and in
+# Docker cannot run CRLF scripts). Windows launchers keep Windows line endings.
+*.sh    text eol=lf
+*.cmd   text eol=crlf
+*.patch text eol=lf
+# DVC files are read and rewritten by DVC inside WSL; keep them byte-identical on every OS.
+*.dvc       text eol=lf
+dvc.yaml    text eol=lf
+dvc.lock    text eol=lf
+.dvc/config text eol=lf

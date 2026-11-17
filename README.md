@@ -15,6 +15,10 @@ The predictive controller is implemented and has paired experiment results. In t
 
 The latest local verification record is [`reports/phase2_verification_20261111.md`](reports/phase2_verification_20261111.md). It separates freshly verified local results from still-unverified GitHub CI, remote DVC, and hosted deployment steps.
 
+## New team member? Start here
+
+[`docs/TEAM_SETUP.md`](docs/TEAM_SETUP.md) sets up everything on your own Windows laptop with double-click launchers in `team/windows/` (tests, SUMO, Metaflow UI, Evidently, Prometheus/Grafana). Data is versioned with DVC: [`docs/DVC_DATA_GUIDE.md`](docs/DVC_DATA_GUIDE.md).
+
 ## Phase 3: drift, versioning, dashboard, governance
 
 - **Dashboard:** `GET /dashboard` on the API (live: https://traffic-queue-api.onrender.com/dashboard after the next approved deploy) shows pipeline, drift monitoring, model versions, retraining, live CI runs, a live prediction and governance controls.

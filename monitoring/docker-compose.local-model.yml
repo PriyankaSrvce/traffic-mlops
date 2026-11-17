@@ -1,0 +1,13 @@
+# Optional override: use a model file already on this computer instead of downloading it.
+#
+#   python scripts/fetch_model.py            (once, while online; prints the folder)
+#   MODEL_DIR=../models/8da60b0e70a0 docker compose -f docker-compose.yml -f docker-compose.local-model.yml up -d --build
+#
+# The container still checks the file's SHA-256 against the Dockerfile before serving.
+services:
+  api:
+    environment:
+      QUEUE_MODEL_URL: ""
+      QUEUE_MODEL_PATH: /models/bengaluru_queue_hurdle_v1_2026-11.joblib
+    volumes:
+      - ${MODEL_DIR:?set MODEL_DIR to the folder that holds bengaluru_queue_hurdle_v1_2026-11.joblib}:/models:ro

@@ -1,9 +1,10 @@
 # Local observability stack for the Phase 3 demo: API + Prometheus + Grafana.
 #
-#   MODEL_DIR=/path/to/folder/with/the/model docker compose up -d --build
+#   docker compose up -d --build
 #
-# MODEL_DIR must contain bengaluru_queue_hurdle_v1_2026-11.joblib (the approved model; the
-# container refuses to start if its SHA-256 differs from the pinned value).
+# The API container downloads the production model itself (QUEUE_MODEL_URL below, the
+# registry's artifact_url) and refuses to start unless its SHA-256 equals the value pinned
+# in the Dockerfile. Offline use with a local copy: see docker-compose.local-model.yml.
 # Grafana:    http://localhost:3000  (dashboard "Traffic Queue Model - MLOps Monitoring")
 # Prometheus: http://localhost:9090
 # API:        http://localhost:8000/dashboard
@@ -16,8 +17,10 @@ services:
       dockerfile: Dockerfile
     environment:
       LOG_LEVEL: INFO
-    volumes:
-      - ${MODEL_DIR:?set MODEL_DIR to the folder that holds the approved model file}:/models:ro
+      QUEUE_MODEL_PATH: /tmp/queue-model.joblib
+      # Production model (registry/model_versions.json). Keep in step with the Dockerfile SHA;
+      # a unit test checks that both name the registry's production entry.
+      QUEUE_MODEL_URL: ${QUEUE_MODEL_URL:-https://raw.githubusercontent.com/PriyankaSrvce/traffic-mlops/model-8da6/bengaluru_queue_hurdle_v1_2026-11.joblib}
     ports:
       - "127.0.0.1:8000:8000"
 
