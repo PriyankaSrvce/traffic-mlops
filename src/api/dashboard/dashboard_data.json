@@ -1,14 +1,14 @@
 {
-  "generated_utc": "2026-11-16T18:17:53+00:00",
+  "generated_utc": "2026-11-17T01:55:33+00:00",
   "performance": {
-    "test_mae": 0.05500322448431176,
-    "persistence_test_mae": 0.06935,
-    "improvement_pct": 21,
-    "rows": 357124,
-    "runs": 18
+    "test_mae": 0.0557631814330094,
+    "persistence_test_mae": 0.0721,
+    "improvement_pct": 23,
+    "rows": 607924,
+    "runs": 30
   },
   "quality": {
-    "tests": 60
+    "tests": 62
   },
   "pipeline": [
     {
@@ -275,6 +275,68 @@
       "run_folder": "20261116T181624Z-5"
     }
   },
+  "post_deployment": {
+    "model_sha256": "8da60b0e70a0e38c3e4c5d82eefd47fd170949997e62b9bbf3f573ebb03c0804",
+    "approved_test_mae_m": 0.0557631814330094,
+    "before_model_sha256": "167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b",
+    "rows": [
+      {
+        "batch": "normal_test",
+        "label": "Normal (held-out)",
+        "mae_before": 0.05500322448431176,
+        "mae_after": 0.05267118644051649,
+        "persistence_mae": 0.06935305234631294,
+        "skill_before": 0.79309017589672,
+        "skill_after": 0.7594645752216368,
+        "mae_change_vs_approved": -0.055448683397080756,
+        "action": "NO ACTION"
+      },
+      {
+        "batch": "normal_validation",
+        "label": "Normal (balanced mix)",
+        "mae_before": 0.051290759793830486,
+        "mae_after": 0.051222917193655175,
+        "persistence_mae": 0.0755126159994581,
+        "skill_before": 0.6792343122399382,
+        "skill_after": 0.6783358848807829,
+        "mae_change_vs_approved": -0.08142046638441225,
+        "action": "NO ACTION"
+      },
+      {
+        "batch": "surge_600",
+        "label": "Surge 600 veh/h",
+        "mae_before": 0.08768831060561022,
+        "mae_after": 0.07581464852385969,
+        "persistence_mae": 0.09920109439124486,
+        "skill_before": 0.8839449921769138,
+        "skill_after": 0.7642521384376061,
+        "mae_change_vs_approved": 0.3595825520632989,
+        "action": "RETRAINING RECOMMENDED"
+      },
+      {
+        "batch": "surge_720",
+        "label": "Surge 720 veh/h",
+        "mae_before": 0.07687406130945555,
+        "mae_after": 0.07607771771373936,
+        "persistence_mae": 0.10107185027006658,
+        "skill_before": 0.7605882459264977,
+        "skill_after": 0.7527092608917096,
+        "mae_change_vs_approved": 0.3643001665020611,
+        "action": "RETRAINING RECOMMENDED"
+      },
+      {
+        "batch": "sensor_fault_kmh",
+        "label": "Sensor fault",
+        "mae_before": 0.05562506731019641,
+        "mae_after": 0.053947879180873036,
+        "persistence_mae": 0.06935305234631294,
+        "skill_before": 0.8020565127030583,
+        "skill_after": 0.7778731772537637,
+        "mae_change_vs_approved": -0.032553778415909784,
+        "action": "INVESTIGATE DATA PIPELINE"
+      }
+    ]
+  },
   "versions": [
     {
       "name": "v0 single Random Forest",
@@ -303,7 +365,7 @@
     {
       "name": "v1 hurdle (Metaflow)",
       "sha256": "167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b",
-      "stage": "production",
+      "stage": "archived",
       "date": "2026-11-12 (deployed to Render)",
       "source": "Metaflow BengaluruQueueModelFlow/1794405200312669",
       "metaflow_run": "BengaluruQueueModelFlow/1794405200312669",
@@ -314,14 +376,14 @@
       "test_mae": 0.05500322448431176,
       "persistence_test_mae": 0.06935,
       "artifact_url": "https://github.com/PriyankaSrvce/traffic-mlops/releases/download/model-167b/bengaluru_queue_hurdle_v1_2026-11.joblib",
-      "reason": "Passed all 4 quality gates (21 % lower MAE than persistence); reproduced bit-for-bit; live API reports this SHA",
+      "reason": "Passed all 4 quality gates (21 % lower MAE than persistence); reproduced bit-for-bit; live API reports this SHA. Archived 2026-11-17 when v2 was promoted; kept as the rollback target",
       "rollback_target": true
     },
     {
       "name": "v2 hurdle (drift-retrained)",
       "sha256": "8da60b0e70a0e38c3e4c5d82eefd47fd170949997e62b9bbf3f573ebb03c0804",
-      "stage": "approved",
-      "date": "2026-11-15 (Metaflow run 3)",
+      "stage": "production",
+      "date": "2026-11-17 (deployed to Render, CI run #25)",
       "source": "Metaflow BengaluruQueueModelFlow/3 on refreshed data (original + 12 surge runs)",
       "metaflow_run": "BengaluruQueueModelFlow/3",
       "dataset_sha256": "177130ea8b0622fd0575d9b2cb3a4c899a522a6e4fb3f02242defefb82fd93c4",
@@ -339,12 +401,13 @@
         "P3_improves_surge_600_unseen": true,
         "P3_improves_surge_720_unseen": true
       },
-      "reason": "Triggered by performance-drift alert (surge MAE +40 to +59 %). Passed quality gate and promotion checks P1-P3: original test 0.0550 -> 0.0527, unseen surge 600 0.0877 -> 0.0758. Deployment awaits human approval (P4)",
-      "rollback_target": false
+      "reason": "Triggered by performance-drift alert (surge MAE +40 to +59 %). Passed quality gate and promotion checks P1-P3: original test 0.0550 -> 0.0527, unseen surge 600 0.0877 -> 0.0758. Human-approved (P4) and deployed 2026-11-17; live API reports this SHA and matches the offline model on 120 held-out rows (max diff 1.1e-14 m)",
+      "rollback_target": false,
+      "artifact_url": "https://raw.githubusercontent.com/PriyankaSrvce/traffic-mlops/model-8da6/bengaluru_queue_hurdle_v1_2026-11.joblib"
     }
   ],
   "retraining": {
-    "summary": "Candidate v2 hurdle (drift-retrained) (8da60b0e) vs production v1 hurdle (Metaflow) (167b523f) on identical evaluation sets. Decision: APPROVED_FOR_PROMOTION (awaiting human deployment approval, P4).",
+    "summary": "Candidate v2 hurdle (drift-retrained) (8da60b0e) vs the then-production v1 hurdle (Metaflow) (167b523f) on identical evaluation sets. Decision at the time: APPROVED_FOR_PROMOTION (awaiting human deployment approval, P4). v2 hurdle (drift-retrained) has since been deployed and is now the production model.",
     "models": [
       "v1 hurdle (Metaflow) (167b523f)",
       "v2 hurdle (drift-retrained) (8da60b0e)"

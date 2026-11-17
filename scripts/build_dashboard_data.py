@@ -9,6 +9,7 @@ Inputs (defaults):
   reports/phase3_drift/promotion_comparison.json  v1 vs v2 comparison (optional)
   reports/phase3_drift/evidently_summary.json     Evidently drift scores (optional)
   reports/phase3_drift/retraining_request.json    retraining trigger decision (optional)
+  reports/phase3_drift/drift_report_post_v2.json  drift check re-run with the promoted model (optional)
 """
 from __future__ import annotations
 
@@ -99,6 +100,7 @@ def main() -> None:
     ap.add_argument("--comparison", type=Path, default=ROOT / "reports/phase3_drift/promotion_comparison.json")
     ap.add_argument("--evidently", type=Path, default=ROOT / "reports/phase3_drift/evidently_summary.json")
     ap.add_argument("--trigger", type=Path, default=ROOT / "reports/phase3_drift/retraining_request.json")
+    ap.add_argument("--post-report", type=Path, default=ROOT / "reports/phase3_drift/drift_report_post_v2.json")
     ap.add_argument("--tests", type=int, required=True, help="number of unit tests in the last verified run")
     ap.add_argument("--output", type=Path, default=ROOT / "src/api/dashboard/dashboard_data.json")
     a = ap.parse_args()
@@ -115,14 +117,19 @@ def main() -> None:
                         "performance_drift_level": b["performance_drift_level"], "action": b["action"], "alerts": b["alerts"]})
 
     prod = next(v for v in registry["versions"] if v["stage"] == "production")
+    by_sha = {v["sha256"]: v for v in registry["versions"]}
     retraining = {"summary": "Retraining has not been run yet.", "models": [], "rows": []}
     if a.comparison.exists():
         cmp = json.loads(a.comparison.read_text(encoding="utf-8"))
-        cand = next(v for v in registry["versions"] if v["sha256"] == cmp["candidate_sha256"])
+        # Name both models by SHA: after promotion the "candidate" is the production model.
+        base, cand = by_sha[cmp["production_sha256"]], by_sha[cmp["candidate_sha256"]]
+        outcome = (f" {cand['name']} has since been deployed and is now the production model."
+                   if cand["stage"] == "production" else "")
         retraining = {
-            "summary": (f"Candidate {cand['name']} ({cmp['candidate_sha256'][:8]}) vs production {prod['name']} "
-                        f"({cmp['production_sha256'][:8]}) on identical evaluation sets. Decision: {cmp['decision']}."),
-            "models": [f"{prod['name']} ({cmp['production_sha256'][:8]})", f"{cand['name']} ({cmp['candidate_sha256'][:8]})"],
+            "summary": (f"Candidate {cand['name']} ({cmp['candidate_sha256'][:8]}) vs the then-production {base['name']} "
+                        f"({cmp['production_sha256'][:8]}) on identical evaluation sets. Decision at the time: "
+                        f"{cmp['decision']}.{outcome}"),
+            "models": [f"{base['name']} ({cmp['production_sha256'][:8]})", f"{cand['name']} ({cmp['candidate_sha256'][:8]})"],
             "rows": [{"label": EVAL_TEXT.get(k, k), "mae": [r["production_mae_m"], r["candidate_mae_m"]],
                       "persistence": r["persistence_mae_m"]} for k, r in cmp["evaluation"].items()],
             "checks": cmp["checks"], "decision": cmp["decision"]}
@@ -138,6 +145,19 @@ def main() -> None:
              "mae_m": b["all_rows"]["model_quality"]["mae_m"],
              "report": f"/reports/evidently/{name}_occupied_lanes"} for name, b in ev["batches"].items()]}
     trigger = json.loads(a.trigger.read_text(encoding="utf-8")) if a.trigger.exists() else None
+    post = None
+    if a.post_report.exists():
+        after = json.loads(a.post_report.read_text(encoding="utf-8"))
+        before = {b["batch"]: b for b in drift["batches"]}
+        post = {"model_sha256": after["model_sha256"], "approved_test_mae_m": after["approved_test_mae_m"],
+                "before_model_sha256": drift["model_sha256"], "rows": [
+                    {"batch": b["batch"], "label": BATCH_TEXT.get(b["batch"], (b["batch"], ""))[0],
+                     "mae_before": before[b["batch"]]["model_metrics"]["mae_m"], "mae_after": b["model_metrics"]["mae_m"],
+                     "persistence_mae": b["persistence_metrics"]["mae_m"],
+                     "skill_before": before[b["batch"]]["model_metrics"]["mae_m"] / before[b["batch"]]["persistence_metrics"]["mae_m"],
+                     "skill_after": b["model_metrics"]["mae_m"] / b["persistence_metrics"]["mae_m"],
+                     "mae_change_vs_approved": b["mae_change_vs_approved"], "action": b["action"]}
+                    for b in after["batches"] if b["batch"] in before]}
 
     data = {
         "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -148,7 +168,7 @@ def main() -> None:
         "pipeline": PIPELINE, "pipeline_loop": LOOP,
         "drift": {"policy": drift["policy"], "approved_test_mae_m": drift["approved_test_mae_m"],
                   "model_sha256": drift["model_sha256"], "generated_utc": drift["generated_utc"], "batches": batches},
-        "evidently": evidently, "retraining_trigger": trigger,
+        "evidently": evidently, "retraining_trigger": trigger, "post_deployment": post,
         "versions": registry["versions"], "retraining": retraining, "governance": GOVERNANCE,
         "sample_request": SAMPLE_REQUEST,
         "links": {"repo": f"https://github.com/{REPO}", "repo_slug": REPO,

@@ -102,11 +102,29 @@ Two cautions recorded honestly:
 - Evidently's first run flagged `vehicle_composition` on normal data, because the reference was about half motorcycle-heavy and the batches all balanced. Reference and batches are now compared on the same vehicle mix.
 - Evidently's dataset-level flag (50 % of columns) stays off under the surge: 3 of 8 columns drift. The policy acts on column-level results.
 
-## 7. Limitations
+## 6b. Addendum, 2026-11-17: v2 redeployed
+
+- **Approval and deployment.** v2 (`8da60b0e…`) was approved by a team member and deployed: artifact at tag `model-8da6`; `QUEUE_MODEL_SHA256` changed in `Dockerfile`, `render.yaml`, the deployment metadata and the Render service; deploy job run (CI run #25).
+- **Pre-deployment test.** The built image downloaded the artifact from the published URL, passed the SHA check and matched the offline model on 300 held-out rows (max difference 3.6e-15 m). A container given the v1 SHA with the v2 file refused to start.
+- **Live verification.** `/api/v1/model-info` reports `8da60b0e…`; 120 held-out rows sent to the live API match the offline model (max difference 1.1e-14 m).
+- **Registry.** v2 → `production`; v1 → `archived`, rollback target. `scripts/model_promotion.py rollback` prints v1's settings.
+- **Drift check after redeployment** (`reports/phase3_drift/drift_report_post_v2.json`, reference = v2 training split):
+
+| Batch | Worst PSI | MAE v1 → v2 | MAE ÷ persistence MAE, v1 → v2 | Action with v2 |
+|---|---|---|---|---|
+| Normal test | 0.022 | 0.0550 → 0.0527 | 0.79 → 0.76 | No action |
+| Normal, balanced mix | 0.070 | 0.0513 → 0.0512 | 0.68 → 0.68 | No action |
+| Surge 600 | 0.112 | 0.0877 → 0.0758 | 0.88 → 0.76 | Retraining recommended (+36 % vs approved 0.0558) |
+| Surge 720 | 0.145 | 0.0769 → 0.0761 | 0.76 → 0.75 | Retraining recommended (+36 %) |
+| Sensor fault | 0.763 | 0.0556 → 0.0539 | 0.80 → 0.78 | Investigate data pipeline |
+
+  v2 has the same advantage over persistence in surge as in normal traffic, so the retraining restored the model's skill. The absolute-error rule still fires under surge because surge traffic is harder for every predictor. The threshold was not changed after seeing this; the rule is recorded for review in `docs/GOVERNANCE.md` §5.3.
+
+
 
 - Drift batches are simulated scenarios and one synthetic fault, not live traffic.
 - Monitoring runs as a batch job, not as a live stream.
-- v2 is not deployed. Deployment needs the release approver (upload the v2 artifact, change `QUEUE_MODEL_URL`/`QUEUE_MODEL_SHA256`, run the deploy job).
+- (Superseded on 2026-11-17, see §6b.) At the time of the original report v2 was not deployed.
 
 ## Reproduce
 

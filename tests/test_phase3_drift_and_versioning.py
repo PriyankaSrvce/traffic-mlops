@@ -105,3 +105,27 @@ class DashboardRouteTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RegistryConsistencyTests(unittest.TestCase):
+    """The registry, the deployment metadata and the image must name the same production model."""
+
+    def test_production_entry_matches_deployment_metadata_and_dockerfile(self):
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[1]
+        registry = json.loads((root / "registry/model_versions.json").read_text(encoding="utf-8"))
+        production = [v for v in registry["versions"] if v["stage"] == "production"]
+        self.assertEqual(len(production), 1)
+        metadata = json.loads((root / "src/api/bengaluru_deployment_metadata.json").read_text(encoding="utf-8"))
+        self.assertEqual(metadata["sha256"], production[0]["sha256"])
+        self.assertEqual(metadata["dataset_sha256"], production[0]["dataset_sha256"])
+        self.assertIn(production[0]["sha256"], (root / "Dockerfile").read_text(encoding="utf-8"))
+        self.assertIn(production[0]["sha256"], (root / "render.yaml").read_text(encoding="utf-8"))
+
+    def test_rollback_target_is_an_earlier_version_with_a_download_url(self):
+        from pathlib import Path
+        registry = json.loads((Path(__file__).resolve().parents[1] / "registry/model_versions.json").read_text(encoding="utf-8"))
+        targets = [v for v in registry["versions"] if v.get("rollback_target")]
+        self.assertEqual(len(targets), 1)
+        self.assertNotEqual(targets[0]["stage"], "production")
+        self.assertTrue(targets[0]["artifact_url"].startswith("https://"))

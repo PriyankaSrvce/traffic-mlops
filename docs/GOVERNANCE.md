@@ -174,6 +174,31 @@ because three identifier columns cannot change when only demand changes.
   the replay script. A real deployment must authenticate feedback, or false records could
   distort the live error metrics.
 
+### 5.3 After redeployment (v2 in production)
+
+v2 was deployed on 2026-11-17 and the drift check was repeated with it
+(`reports/phase3_drift/drift_report_post_v2.json`).
+
+| Batch | MAE v1 → v2 | Model MAE ÷ persistence MAE, v1 → v2 | Action with v2 |
+|---|---|---|---|
+| Normal held-out test | 0.0550 → 0.0527 | 0.79 → 0.76 | No action |
+| Surge 600 veh/h | 0.0877 → 0.0758 | 0.88 → 0.76 | Retraining recommended |
+| Surge 720 veh/h | 0.0769 → 0.0761 | 0.76 → 0.75 | Retraining recommended |
+| Sensor fault | 0.0556 → 0.0539 | 0.80 → 0.78 | Investigate data pipeline |
+
+**What this shows, stated plainly.** Retraining restored the model's advantage over the
+baseline under surge (0.88 → 0.76 on surge 600), and v2 now has the same advantage in surge
+as in normal traffic. The absolute rule "MAE more than 25 % above the approved MAE" still
+fires for the surge batches (+36 %), because the approved MAE is measured mostly on normal
+traffic and surge traffic is harder for every predictor (persistence error is 43–46 % higher
+there too).
+
+**Governance consequence.** The alert is kept as it is; the threshold was not changed after
+seeing the result. Retraining again on the same data would reproduce the same model, so the
+recorded follow-up actions are: (1) review the performance rule so it also considers error
+relative to the baseline, per demand level, and (2) collect more surge runs. Any change to the
+rule must go through a reviewed pull request like any other change.
+
 ## 6. Change management and CI/CD controls
 
 | Control | Enforcement | Justification |

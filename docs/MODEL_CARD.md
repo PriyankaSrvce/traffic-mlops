@@ -1,11 +1,11 @@
 # Model Card: Bengaluru 60-second Queue Predictor
 
-| | v1 (production) | v2 (approved, awaiting deployment) |
+| | v1 (archived, rollback target) | v2 (production since 2026-11-17) |
 |---|---|---|
 | SHA-256 | `167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b` | `8da60b0e70a0e38c3e4c5d82eefd47fd170949997e62b9bbf3f573ebb03c0804` |
 | Metaflow run | `BengaluruQueueModelFlow/1794405200312669` (also reproduced as run 2) | `BengaluruQueueModelFlow/3` |
 | Dataset SHA-256 | `4e8213df…5ffb` (357,124 rows, 18 runs) | `177130ea…93c4` (607,924 rows, 30 runs = v1 data + 12 surge runs) |
-| Registry stage | production (live on Render) | approved (passed P1–P3; P4 human deployment pending) |
+| Registry stage | archived; production from 2026-11-12 to 2026-11-17 | production (passed P1–P3, human-approved P4, live on Render) |
 
 ## Intended use
 
@@ -56,6 +56,9 @@ Quality gate (Metaflow `acceptance` step): on both validation and test, MAE must
 - **v1 under surge:** on surge test seeds v1 was *worse* than persistence (0.0901 vs 0.0759).
   This is the main reason v2 was trained.
 - **Severe surge (720 veh/h, unseen seeds):** v2 improves only slightly (0.0769 → 0.0761).
+- **v2 under surge after deployment:** on the unseen surge batches v2's MAE (0.0758 / 0.0761 m) is still 36 % above its
+  approved test MAE (0.0558 m), so the absolute-error alert still fires. Its error relative to persistence is the same
+  as in normal traffic (about 0.76), so it has kept its skill; surge traffic is simply harder to predict.
 - Results come from simulation. No field-observed queue labels exist.
 
 ## Monitoring

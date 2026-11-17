@@ -19,7 +19,7 @@ The latest local verification record is [`reports/phase2_verification_20261111.m
 
 - **Dashboard:** `GET /dashboard` on the API (live: https://traffic-queue-api.onrender.com/dashboard after the next approved deploy) shows pipeline, drift monitoring, model versions, retraining, live CI runs, a live prediction and governance controls.
 - **Drift:** demand surges (600/720 veh/h, unseen) and a synthetic km/h sensor fault were induced and detected. Surges raise MAE by +40 to +59 % → retraining recommended; the sensor fault raises PSI to 0.77 with stable MAE → investigate data pipeline. See [`reports/phase3_drift_versioning_report.md`](reports/phase3_drift_versioning_report.md).
-- **Versioning:** [`registry/model_versions.json`](registry/model_versions.json) lists every version by SHA-256. v2 (`8da60b0e…`, Metaflow run 3) passed the quality gate and promotion checks; v1 (`167b523f…`) stays in production until a human approves deployment.
+- **Versioning:** [`registry/model_versions.json`](registry/model_versions.json) lists every version by SHA-256. v2 (`8da60b0e…`, Metaflow run 3) passed the quality gate and promotion checks and, after human approval, **has been the production model since 2026-11-17** (live `/api/v1/model-info` reports it). v1 (`167b523f…`) is archived and is the recorded rollback target (`python scripts/model_promotion.py rollback`).
 - **Governance:** [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md) and [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md).
 - **Evidently:** per-batch drift reports (`sumo/bengaluru_osm/evidently_drift_report.py`), served at `/reports/evidently/<batch>_occupied_lanes` and linked from the dashboard. They agree with the PSI detector.
 - **Logging and metrics:** the API logs every prediction (Python `logging`) and exposes Prometheus metrics at `/metrics`. `monitoring/docker-compose.yml` starts the API, Prometheus and a provisioned Grafana dashboard; `scripts/replay_production_traffic.py` replays simulated production traffic (normal → surge → sensor fault) with ground-truth feedback.
@@ -39,7 +39,9 @@ The latest local verification record is [`reports/phase2_verification_20261111.m
 | DVC pipeline and pointers | `dvc.yaml`, `dvc.lock`, `*.dvc` |
 | Reports and run instructions | `docs/`, `reports/` |
 
-The model named by the API metadata is the Metaflow run `1794405200312669` artifact, SHA-256 `167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b`. The pinned WSL environment reproduced it byte-for-byte on 2026-11-12. The earlier deployment candidate (SHA-256 `72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71`) is a separately serialized file. Its predictions on all 112,176 test rows match `167b` to within 7.1e-15 m, but its bytes differ, so it will not pass the `167b` integrity check. Model binaries are excluded from the source tree and build image; provide the exact `167b` file through an approved, SHA-256-verified artifact source or read-only mount.
+**Current production model (since 2026-11-17):** Metaflow run `3`, SHA-256 `8da60b0e70a0e38c3e4c5d82eefd47fd170949997e62b9bbf3f573ebb03c0804` (v2, drift-retrained), published at tag `model-8da6`. The paragraphs below describe the Phase 2 model (v1), which is now the rollback target.
+
+Until 2026-11-17 the model named by the API metadata was the Metaflow run `1794405200312669` artifact, SHA-256 `167b523fc8c89199f6a8bf0689475272654db96b59b8a1da9b8a9986bff0b13b`. The pinned WSL environment reproduced it byte-for-byte on 2026-11-12. The earlier deployment candidate (SHA-256 `72bc01ba9b659eeb47cd977b9bfb691e552da9f610bf637a96b05d3d36f9ea71`) is a separately serialized file. Its predictions on all 112,176 test rows match `167b` to within 7.1e-15 m, but its bytes differ, so it will not pass the `167b` integrity check. Model binaries are excluded from the source tree and build image; provide the exact `167b` file through an approved, SHA-256-verified artifact source or read-only mount.
 
 ## Setup and verification
 
@@ -68,19 +70,21 @@ docker build -t traffic-queue-api:local .
 
 Run it with an approved local model mount (PowerShell example):
 
-The model binary is gitignored, so stage the `167b` file first. It can be exported from the Metaflow run with `scripts/model_registry_report.py` or taken from the team's verified handover package:
+The model binary is gitignored, so stage the production (`8da60b0e`) file first. Download it from
+`https://raw.githubusercontent.com/PriyankaSrvce/traffic-mlops/model-8da6/bengaluru_queue_hurdle_v1_2026-11.joblib`
+or export it from Metaflow run 3:
 
 ```powershell
 $modelPath = ".\models\bengaluru\bengaluru_queue_hurdle_v1_2026-11.joblib"
-if (-not (Test-Path $modelPath)) { throw "Stage the 167b model at $modelPath first (it is not in Git)." }
-if ((Get-FileHash $modelPath -Algorithm SHA256).Hash -ne "167B523FC8C89199F6A8BF0689475272654DB96B59B8A1DA9B8A9986BFF0B13B") { throw "Wrong model file." }
+if (-not (Test-Path $modelPath)) { throw "Stage the 8da60b0e model at $modelPath first (it is not in Git)." }
+if ((Get-FileHash $modelPath -Algorithm SHA256).Hash -ne "8DA60B0E70A0E38C3E4C5D82EEFD47FD170949997E62B9BBF3F573EBB03C0804") { throw "Wrong model file." }
 $model = (Resolve-Path $modelPath).Path
 docker run --rm -p 8000:8000 `
   --mount "type=bind,source=$model,target=/models/bengaluru_queue_hurdle_v1_2026-11.joblib,readonly" `
   traffic-queue-api:local
 ```
 
-The image's environment already points to the mounted path, the baked-in metadata and the `167b` SHA-256. If the configured hash does not match the file, startup is refused (the entrypoint exits with an error). If no file is mounted, the endpoints return HTTP 503.
+The image's environment already points to the mounted path, the baked-in metadata and the `8da60b0e` SHA-256. If the configured hash does not match the file, startup is refused (the entrypoint exits with an error). If no file is mounted, the endpoints return HTTP 503.
 
 History: on 2026-11-11 the image `traffic-queue-api:phase2-final` was built and run locally against the earlier `72bc…` candidate. Health, model-info and prediction returned HTTP 200, and a held-out example returned 5.1657 m against an observed 11.0 m. On 2026-11-12 the `167b` model returned the same 5.1656687762 m for that request through the API and the image entrypoint, but no container was built that day because the local Docker engine was unavailable. No image has been pushed.
 

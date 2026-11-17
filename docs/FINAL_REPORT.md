@@ -79,7 +79,7 @@ baseline. Phase 2 and 3 use the SUMO queue model. The two are never mixed.
 - **Testing.** PyTest suite, run on every push and pull request.
 - **Serving.** FastAPI: `/predict`, `/model-info`, `/health`. The API refuses to start if the model's SHA-256 does not match the approved value.
 - **Container and CI/CD.** Docker image (non-root user, health check). GitHub Actions job `checks-and-image` runs on every push/PR; the `deploy` job runs only on manual dispatch on `main`.
-- **Deployment.** Render serves the model; `/api/v1/model-info` reports SHA `167b523f…`.
+- **Deployment.** Render serves the model. In Phase 2, `/api/v1/model-info` reported SHA `167b523f…` (v1); since 2026-11-17 it reports `8da60b0e…` (v2, §5.4).
 - **Controller experiment.** Fixed-time, adaptive and predictive signal control were compared in SUMO. Fixed-time had the lowest mean travel time in the clean runs. The project therefore does **not** claim that predictive control is better; the contribution is the prediction service and its MLOps pipeline.
 
 ## 5. Phase 3: monitoring, feedback and governance
@@ -141,7 +141,10 @@ The two tools agree. Three findings matter:
 | Unseen surge 600 | 0.0992 | 0.0877 | 0.0758 |
 | Unseen surge 720 | 0.1011 | 0.0769 | 0.0761 |
 
-v2 fixes the drift without regressing on normal traffic. On the unseen 720 veh/h batch the gain is small (1 %). v2 is registered as **approved**; switching production to it is a human decision (governance gate P4).
+v2 fixes the drift without regressing on normal traffic. On the unseen 720 veh/h batch the gain is small (1 %).
+
+4. **Redeployment.** After human approval (governance gate P4), v2 was deployed on 2026-11-17: the artifact was published at tag `model-8da6`, the pinned SHA-256 was changed in the code and in Render, and the manual deploy job (CI run #25) was run. The live API reports `8da60b0e…` and matches the offline model on 120 held-out rows (max difference 1.1e-14 m). v1 is archived as the rollback target.
+5. **Check after redeployment** (`reports/phase3_drift/drift_report_post_v2.json`). With v2, the model's error as a share of the baseline's error is about 0.76 in normal traffic and in both surges (v1 had slipped to 0.88 on surge 600). The surge batches still exceed the "+25 % vs approved MAE" line (+36 %), because surge traffic is harder for every predictor. The alert is left visible and the rule is recorded for review (`docs/GOVERNANCE.md` §5.3).
 
 ### 5.5 Governance
 
@@ -159,7 +162,7 @@ v2 fixes the drift without regressing on normal traffic. On the unseen 720 veh/h
 | Deployed prediction service | Done | Render URL above |
 | Monitoring / observability dashboard | Done | Grafana (`monitoring/`), `/dashboard`, Evidently reports |
 | Deliberately introduced drift scenario | Done | §5.1 |
-| Drift detection and retraining / redeployment evidence | Drift detection and retraining done. Redeployment of v2 awaits human approval; the redeployment mechanism itself (pinned SHA + deploy job) is the one used for every release | §5.2, §5.4, `retraining_request.json` |
+| Drift detection and retraining / redeployment evidence | Done: drift detected, retraining triggered, v2 compared with v1, v2 redeployed and verified live | §5.2, §5.4, `retraining_request.json`, `registry/model_versions.json` |
 | Model card / governance and limitations report | Done | `docs/MODEL_CARD.md`, `docs/GOVERNANCE.md`, §7 |
 
 ## 7. Tool choices (hybrid MLOps stack)
@@ -190,5 +193,5 @@ v2 fixes the drift without regressing on normal traffic. On the unseen 720 veh/h
 1. Live web dashboard: https://traffic-queue-api.onrender.com/dashboard (pipeline, drift, versions, CI, governance).
 2. Evidently reports, opened from the dashboard's drift section.
 3. Grafana: `monitoring/docker-compose.yml`, then `scripts/replay_production_traffic.py` to watch normal → surge → sensor fault.
-4. Metaflow UI: run 2 (v1) and runs 3–5 (v2, including the trigger-launched runs).
+4. Metaflow UI: run 2 (v1) and runs 3–5 (v2, including the trigger-launched runs). `/api/v1/model-info` shows v2 live.
 5. GitHub Actions: test, build and deploy jobs.

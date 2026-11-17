@@ -145,7 +145,8 @@ def main() -> None:
     ap.add_argument("--batch", action="append", required=True, help="NAME=path/to/labeled.csv (repeatable)")
     ap.add_argument("--model", type=Path, default=ROOT / "models/bengaluru/bengaluru_queue_hurdle_v1_2026-11.joblib")
     ap.add_argument("--metadata", type=Path, default=ROOT / "src/api/bengaluru_deployment_metadata.json")
-    ap.add_argument("--approved-test-mae", type=float, default=0.05500322448431176)
+    # Test MAE of the production model at approval. v2 (8da60b0e): 0.0558 m; v1 (167b523f) was 0.0550 m.
+    ap.add_argument("--approved-test-mae", type=float, default=0.0557631814330094)
     ap.add_argument("--output-dir", type=Path, default=ROOT / "reports/phase3_drift")
     a = ap.parse_args()
 
